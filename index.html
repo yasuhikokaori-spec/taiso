@@ -1,0 +1,933 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1f7a5c">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="体操タイマー">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>わが家の体操タイマー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
+<style>
+/* Layout: one column, large touch targets; a "start" screen (menu + calendar) and a full "run" screen */
+:root{
+  --bg:#f2f6f3; --surface:#ffffff; --ink:#1c2925; --muted:#56675f;
+  --accent:#1f7a5c; --accent-ink:#ffffff; --warm:#b85c18; --line:#d3ddd8; --track:#e2eae6;
+  --f-display:"Zen Maru Gothic","Hiragino Maru Gothic ProN","BIZ UDPGothic",sans-serif;
+  --f-body:"BIZ UDPGothic","Hiragino Sans","Yu Gothic",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111916; --surface:#1a2521; --ink:#e7efeb; --muted:#9db0a8;
+  --accent:#4cc49a; --accent-ink:#0b1813; --warm:#e8964f; --line:#2c3a35; --track:#24322d; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111916; --surface:#1a2521; --ink:#e7efeb; --muted:#9db0a8;
+  --accent:#4cc49a; --accent-ink:#0b1813; --warm:#e8964f; --line:#2c3a35; --track:#24322d; color-scheme:dark}
+
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:19px;line-height:1.7}
+.wrap{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px;display:flex;flex-direction:column;gap:24px}
+h1{font-family:var(--f-display);font-weight:900;font-size:2rem;line-height:1.3;margin:0;text-wrap:balance}
+h2{font-family:var(--f-display);font-weight:700;font-size:1.3rem;margin:0}
+p{margin:0}
+.lead{color:var(--muted)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:16px}
+.ex{display:flex;flex-direction:column;gap:6px}
+.ex img,.pic img{width:100%;max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);background:#fff}
+.pic{display:flex;justify-content:center}
+.pic img{width:auto;max-height:34vh;object-fit:contain}
+.ex b{font-family:var(--f-display);font-size:1.15rem}
+.ex span{color:var(--muted);font-size:.95rem}
+.row{display:flex;flex-direction:column;gap:8px}
+.row label{font-weight:700}
+.seg{display:flex;gap:8px;flex-wrap:wrap}
+.seg button{flex:1 1 0;min-width:64px;min-height:56px;font:700 1.05rem var(--f-body);border-radius:12px;border:2px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.seg button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+.big{min-height:76px;border:0;border-radius:18px;background:var(--accent);color:var(--accent-ink);font:900 1.6rem var(--f-display);cursor:pointer;width:100%}
+.ghost{min-height:56px;border:2px solid var(--line);border-radius:14px;background:transparent;color:var(--ink);font:700 1.05rem var(--f-body);cursor:pointer;width:100%}
+button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
+.note{font-size:.95rem;color:var(--muted);border-left:4px solid var(--warm);padding-left:12px}
+
+/* calendar */
+.cal-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.cal-head strong{font-family:var(--f-display);font-size:1.6rem;color:var(--warm);font-variant-numeric:tabular-nums}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center}
+.cal .wd{font-size:.85rem;color:var(--muted)}
+.cal .d{aspect-ratio:1;max-width:100%;display:grid;place-items:center;border-radius:50%;font-size:1rem;font-variant-numeric:tabular-nums}
+.cal .d.done{background:var(--warm);color:var(--surface);font-weight:700}
+.cal .d.today{outline:2px solid var(--accent);outline-offset:-2px}
+
+/* run screen */
+#run{min-height:calc(100vh - 80px);justify-content:space-between}
+.stage{display:flex;flex-direction:column;gap:6px}
+.stage .kicker{font-weight:700;color:var(--accent);letter-spacing:.06em}
+.stage h2{font-size:1.8rem}
+.guide{font-size:1.2rem;min-height:3.4em}
+.meter{display:flex;gap:20px;align-items:stretch;justify-content:center}
+.gauge{width:44px;border-radius:22px;background:var(--track);position:relative;overflow:hidden;min-height:160px}
+.gauge i{position:absolute;left:0;right:0;bottom:0;height:0;background:var(--accent);border-radius:22px;transition:height .15s linear}
+.num{display:flex;flex-direction:column;justify-content:center;align-items:center;min-width:0}
+.num .n{font-family:var(--f-display);font-weight:900;font-size:clamp(5rem,26vw,9rem);line-height:1;font-variant-numeric:tabular-nums}
+.num .u{font-size:1.2rem;color:var(--muted)}
+.phase{font-family:var(--f-display);font-weight:700;font-size:1.8rem;text-align:center;color:var(--warm);min-height:1.5em}
+.bar{height:10px;border-radius:5px;background:var(--track);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent)}
+.ctrl{display:grid;grid-template-columns:2fr 1fr;gap:10px}
+.done-msg{text-align:center;display:flex;flex-direction:column;gap:12px;align-items:center}
+.done-msg .medal{width:96px;height:96px;border-radius:50%;background:var(--warm);color:var(--surface);display:grid;place-items:center;font:900 1.4rem var(--f-display)}
+/* family */
+.people{display:flex;flex-wrap:wrap;gap:8px}
+.people button{min-height:56px;padding:0 18px;border-radius:28px;border:2px solid var(--line);background:var(--surface);color:var(--ink);font:700 1.05rem var(--f-body);cursor:pointer}
+.people button[aria-pressed="true"]{background:var(--warm);border-color:var(--warm);color:var(--surface)}
+.people .add{border-style:dashed;color:var(--muted)}
+.who{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.who .tier{font-weight:700;color:var(--accent)}
+.link{background:none;border:0;color:var(--accent);font:700 1rem var(--f-body);text-decoration:underline;cursor:pointer;min-height:44px;padding:0}
+.form{display:flex;flex-direction:column;gap:14px;border-top:1px solid var(--line);padding-top:16px}
+.form input{min-height:56px;font:1.15rem var(--f-body);padding:0 14px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink);width:100%;box-sizing:border-box}
+.form input:focus-visible{outline:3px solid var(--warm);outline-offset:2px}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btns .big{min-height:60px;font-size:1.2rem}
+.danger{color:var(--warm);border-color:var(--warm)}
+.fam{display:flex;flex-wrap:wrap;gap:8px 16px;color:var(--muted);font-size:.95rem}
+.fam b{color:var(--ink);font-variant-numeric:tabular-nums}
+.hint{font-size:.9rem;color:var(--muted)}
+/* fitness test */
+.verdict{text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}
+.verdict .age{font-family:var(--f-display);font-weight:900;font-size:clamp(3.2rem,16vw,5rem);line-height:1.1;color:var(--warm)}
+.verdict .msg{font-family:var(--f-display);font-weight:700;font-size:1.35rem;text-wrap:balance}
+.score{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:baseline;padding-block:10px;border-top:1px solid var(--line)}
+.score b{font-family:var(--f-display);font-size:1.1rem}
+.score .v{font-family:var(--f-display);font-weight:900;font-size:1.6rem;font-variant-numeric:tabular-nums;text-align:right}
+.score .s{grid-column:1/-1;color:var(--muted);font-size:.95rem}
+.counter{display:flex;flex-direction:column;align-items:center;gap:4px}
+.counter .n{font-family:var(--f-display);font-weight:900;font-size:clamp(5rem,26vw,8rem);line-height:1;font-variant-numeric:tabular-nums}
+.counter .t{font-size:1.3rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.tap{min-height:120px;border:0;border-radius:24px;background:var(--warm);color:var(--surface);font:900 1.8rem var(--f-display);cursor:pointer;width:100%;touch-action:manipulation}
+.tap:disabled{opacity:.35;cursor:default}
+.adj{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.steps{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:4px}
+.hist{display:flex;flex-direction:column;gap:2px;font-size:.95rem;color:var(--muted)}
+.hist b{color:var(--ink);font-variant-numeric:tabular-nums}
+[hidden]{display:none!important}
+.sync{font-size:.9rem;color:var(--muted);display:flex;align-items:center;gap:8px}
+.sync::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--line);flex:none}
+.sync.on::before{background:var(--accent)}
+.sync.warn::before{background:var(--warm)}
+/* goals */
+.gbar{position:relative;height:28px;border-radius:14px;background:var(--track);overflow:visible}
+.gbar i{position:absolute;inset:0 auto 0 0;border-radius:14px;background:var(--accent);max-width:100%}
+.gbar .pace{position:absolute;top:-6px;bottom:-6px;width:3px;margin-left:-1.5px;background:var(--warm);border-radius:2px}
+.glegend{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:.9rem;color:var(--muted)}
+.glegend .pk{display:inline-block;width:3px;height:12px;background:var(--warm);vertical-align:-1px;margin-right:4px}
+.gnum{font-family:var(--f-display);font-size:1.15rem}
+.gnum b{font-size:2rem;font-weight:900;font-variant-numeric:tabular-nums}
+.plan{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding-block:8px;border-top:1px solid var(--line)}
+.plan select{flex:1 1 220px;min-width:0;min-height:56px;font:700 1.05rem var(--f-body);padding:0 10px;border-radius:12px;border:2px solid var(--line);background:var(--surface);color:var(--ink)}
+.stepper{display:flex;align-items:center;gap:8px}
+.stepper button{width:56px;min-height:56px;padding:0;font-size:1.4rem}
+.stepper span{min-width:3.2em;text-align:center;font:900 1.3rem var(--f-display);font-variant-numeric:tabular-nums}
+.gsum{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;padding-block:12px;border-top:2px solid var(--line)}
+.gsum b{font-family:var(--f-display);font-size:1.5rem;color:var(--warm);font-variant-numeric:tabular-nums}
+.cmp{display:grid;grid-template-columns:1fr auto auto auto;gap:6px 10px;align-items:baseline;font-variant-numeric:tabular-nums}
+.cmp .h{color:var(--muted);font-size:.85rem}
+.cmp .up{color:var(--accent);font-weight:700}
+.cmp .dn{color:var(--warm);font-weight:700}
+.pts{font-weight:700;color:var(--accent)}
+@media (prefers-reduced-motion: reduce){.gauge i{transition:none}}
+</style>
+
+<div class="wrap" id="home">
+  <header class="stage">
+    <h1>わが家の体操タイマー</h1>
+    <p class="lead">声で数えるので、画面を見ずに運動できます。家族それぞれ、年代に合わせたメニューを選べます。</p>
+    <p class="sync on" id="syncLine" role="status">記録はこの端末に保存しています。電波がなくても使えます。</p>
+  </header>
+
+  <section class="panel" aria-label="だれがやりますか">
+    <h2>だれがやりますか</h2>
+    <div class="people" id="people"></div>
+    <div class="who"><span>メニュー：<span class="tier" id="whoTier"></span></span><button class="link" id="editBtn">名前・年代を変える</button></div>
+    <div class="form" id="form" hidden>
+      <div class="row"><label for="pName">名前</label><input id="pName" maxlength="12" placeholder="例：おじいちゃん"></div>
+      <div class="row"><label for="pAge">年齢（体力測定に使います）</label><input id="pAge" type="number" inputmode="numeric" min="10" max="100" placeholder="例：68"></div>
+      <div class="row"><label id="l-sex">性別（体力測定に使います）</label>
+        <div class="seg" role="group" aria-labelledby="l-sex" id="sexSeg"><button id="sx-m" data-v="m">男性</button><button id="sx-f" data-v="f">女性</button></div></div>
+      <div class="row"><label id="l-tier">年代メニュー</label>
+        <div class="seg" role="group" aria-labelledby="l-tier" id="tierSeg">
+          <button id="t10" data-v="10">10代</button><button id="t20" data-v="20">20代</button><button id="t30" data-v="30">30代</button><button id="t40" data-v="40">40代</button><button id="t50" data-v="50">50代</button><button id="t60" data-v="60">60代</button><button id="t70" data-v="70">70代〜</button></div>
+        <p class="hint">年齢より、いまの体力に合わせて選んでかまいません。</p></div>
+      <div class="btns"><button class="big" id="saveBtn">保存</button><button class="ghost" id="cancelBtn">やめる</button></div>
+      <button class="ghost danger" id="delBtn">この人を削除</button>
+    </div>
+  </section>
+
+  <section class="panel" aria-label="目標">
+    <div class="cal-head"><h2>目標</h2><span id="goalPeriod"></span></div>
+    <div id="goalBody" style="display:flex;flex-direction:column;gap:12px"></div>
+    <button class="ghost" id="goalBtn">目標を立てる</button>
+  </section>
+
+  <section class="panel" aria-label="きょうのメニュー">
+    <h2>きょうのメニュー</h2>
+    <div class="row"><label id="l-mtier">年代メニュー（どの年代でも選べます）</label>
+      <div class="seg" role="group" aria-labelledby="l-mtier" data-key="tier">
+        <button data-v="10">10代</button><button data-v="20">20代</button><button data-v="30">30代</button><button data-v="40">40代</button><button data-v="50">50代</button><button data-v="60">60代</button><button data-v="70">70代〜</button></div></div>
+    <div class="seg" role="group" aria-label="メニューを選ぶ" data-key="menu">
+      <button id="m-base" data-v="base">① 基本</button><button id="m-belly" data-v="belly">② おなか</button><button id="m-both" data-v="both">①＋② 両方</button></div>
+    <div class="row"><label id="l-level">強さ</label>
+      <div class="seg" role="group" aria-labelledby="l-level" data-key="level">
+        <button id="lv-l" data-v="light">かるめ</button><button id="lv-n" data-v="normal">ふつう</button><button id="lv-h" data-v="hard">しっかり</button></div></div>
+    <p class="lead" id="total"></p>
+    <button class="big" id="startBtn">はじめる</button>
+    <button class="ghost" id="testBtn">声のテスト</button>
+  </section>
+
+  <section class="panel" aria-label="体力測定">
+    <h2>体力測定</h2>
+    <p class="lead" id="fitLast"></p>
+    <div class="hist" id="fitHist"></div>
+    <button class="ghost" id="fitBtn">体力測定をする（約3分）</button>
+  </section>
+
+  <section class="panel" aria-label="運動の内容" id="exList"></section>
+
+  <section class="panel" aria-label="今月の記録">
+    <div class="cal-head"><h2 id="calTitle">今月の記録</h2><span>やった日 <strong id="calCount">0</strong> 日</span></div>
+    <div class="cal" id="cal"></div>
+    <div class="fam" id="fam"></div>
+  </section>
+
+  <section class="panel" aria-label="記録のバックアップ">
+    <h2>記録のバックアップ・引っ越し</h2>
+    <p class="lead">記録はこの端末の中に保存されています。別の端末（PC⇔スマホ）へ移すときや、念のための控えに使います。</p>
+    <ol class="steps"><li>今の端末で「書き出す」を押し、できたファイルを保存します。</li><li>そのファイルをメールやLINEで自分に送ります。</li><li>もう一方の端末で「読み込む」を押し、そのファイルを選びます。</li></ol>
+    <button class="ghost" id="expBtn">記録を書き出す（ファイルに保存）</button>
+    <label class="ghost" for="impFile" style="display:flex;align-items:center;justify-content:center;box-sizing:border-box">記録を読み込む（ファイルを選ぶ）</label>
+    <input type="file" id="impFile" accept=".json,application/json" hidden>
+    <p class="hint" id="bkMsg">読み込むと、この端末の記録はファイルの内容に置きかわります。</p>
+  </section>
+
+  <p class="note">痛み・めまい・息苦しさを感じたら、すぐに中止してください。回数より「毎日少しずつ」が大切です。</p>
+  <p class="hint">体力年齢の判定基準：中谷敏昭ら「30秒椅子立ち上がりテスト（CS-30テスト）成績の加齢変化と標準値の作成」臨床スポーツ医学 20(3), 2003／文部科学省「体力・運動能力調査」年齢別平均値（上体起こし）。判定は目安で、医学的な診断ではありません。持病のある方は、運動を始める前に医師に相談してください。</p>
+</div>
+
+<div class="wrap" id="run" hidden>
+  <div class="stage">
+    <span class="kicker" id="kicker">準備</span>
+    <h2 id="title"></h2>
+    <p class="guide" id="guide"></p>
+  </div>
+  <div class="pic"><img id="runPic" src="squat.jpg" alt="" width="797" height="889"></div>
+  <div class="meter">
+    <div class="gauge" aria-hidden="true"><i id="gauge"></i></div>
+    <div class="num"><span class="n" id="num">0</span><span class="u" id="unit"></span></div>
+  </div>
+  <p class="phase" id="phase" aria-live="polite"></p>
+  <div class="bar" aria-hidden="true"><i id="bar"></i></div>
+  <div class="ctrl">
+    <button class="big" id="pauseBtn">一時停止</button>
+    <button class="ghost" id="stopBtn">やめる</button>
+  </div>
+</div>
+
+<div class="wrap" id="test" hidden>
+  <div class="stage">
+    <span class="kicker" id="tKicker">体力測定</span>
+    <h2 id="tTitle"></h2>
+  </div>
+  <div id="tBody" style="display:flex;flex-direction:column;gap:18px"></div>
+</div>
+
+<div class="wrap" id="fin" hidden>
+  <div class="panel done-msg">
+    <div class="medal">完了</div>
+    <h2 id="finTitle">おつかれさまでした</h2>
+    <p class="lead" id="finText"></p>
+    <button class="big" id="backBtn">メニューにもどる</button>
+  </div>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+var SYNCKEYS=['kt-people','kt-recs','kt-tests','kt-logs','kt-goals','kt-goalhist'],syncTimer=null,syncReady=false,syncDirty=false;
+function queueSync(){syncDirty=true;if(!syncReady)return;clearTimeout(syncTimer);syncTimer=setTimeout(pushSync,1500)}
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+             set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}if(SYNCKEYS.indexOf(k)>=0)queueSync()}};
+
+/* ---- family ---- */
+let people=store.get('kt-people',null),recs=store.get('kt-recs',null);
+if(!people){people=[{id:'p1',name:'わたし',tier:'60',menu:'both',level:'normal'}];
+  recs={p1:store.get('kt-days',[])};store.set('kt-people',people);store.set('kt-recs',recs)}
+recs=recs||{};
+let curId=store.get('kt-cur',people[0].id);
+const cur=()=>people.find(p=>p.id===curId)||people[0];
+const savePeople=()=>{store.set('kt-people',people);store.set('kt-cur',curId)};
+const TIERNAME={'10':'10代','20':'20代','30':'30代','40':'40代','50':'50代','60':'60代','70':'70代〜'};
+
+/* ---- voice ---- */
+let jaVoice=null;
+function pickVoice(){const vs=speechSynthesis.getVoices();jaVoice=vs.find(v=>/^ja/i.test(v.lang))||null}
+if('speechSynthesis' in window){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}
+function say(t){
+  if(!('speechSynthesis' in window)||!t)return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(t);u.lang='ja-JP';u.rate=.9;if(jaVoice)u.voice=jaVoice;
+  speechSynthesis.speak(u);
+}
+
+/* ---- exercise builders ----
+   rep step: ph = phases [{d:seconds,label,g:'up'|'down'|'hold',say}] ; gauge rises on up, falls on down, stays full on hold */
+const LV={light:.6,normal:1,hard:1.4};
+const sc=(n,lv)=>Math.max(3,Math.round(n*LV[lv]));
+const scT=(n,lv)=>Math.max(10,Math.round(n*LV[lv]/5)*5);
+function rep(o){return Object.assign({k:'rep',dur:o.ph.reduce((a,x)=>a+x.d,0)},o)}
+function R(o){ // repeated movement
+  return {name:o.name,desc:o.desc,pic:o.pic,count:lv=>`${sc(o.reps,lv)}回${o.alt?'（左右交互）':''}${(o.sets||1)>1?`×${o.sets}セット`:''}`,
+    build(L,lv,K){
+      const n=sc(o.reps,lv),sets=o.sets||1;
+      L.push({k:'prep',pic:o.pic,title:o.name,kicker:K+'・準備',dur:o.prepDur||8,guide:o.prepGuide,say:o.prepSay});
+      for(let s=1;s<=sets;s++){
+        for(let r=1;r<=n;r++)L.push(rep({pic:o.pic,title:o.name,kicker:sets>1?`${K}・${s} セット目 / ${sets}`:K,rep:r,of:n,
+          ph:o.ph,guide:o.guide,say:o.sayRep?o.sayRep(r):String(r)}));
+        if(s<sets)L.push({k:'rest',pic:o.pic,title:'休憩',kicker:'ひと息',dur:o.rest||20,guide:'深呼吸して、肩の力を抜きましょう。',say:'休憩です。深呼吸しましょう。'});
+      }
+    }};
+}
+function H(o){ // timed hold, optionally per side
+  return {name:o.name,desc:o.desc,pic:o.pic,count:lv=>`${o.sides?'左右 各':''}${fmt(scT(o.dur,lv))}${(o.sets||1)>1?`×${o.sets}セット`:''}`,
+    build(L,lv,K){
+      const d=scT(o.dur,lv),sets=o.sets||1,sides=o.sides?[['右','左'],['左','右']]:[[null,null]],sl=o.sideLabel||(a=>`（${a}足を上げる）`);
+      sides.forEach(([a,b])=>{
+        const t=a?o.name+sl(a):o.name;
+        L.push({k:'prep',pic:o.pic,title:t,kicker:K+'・準備',dur:o.prepDur||8,guide:o.prepGuide(b,a),say:o.prepSay(a,b)});
+        for(let s=1;s<=sets;s++){
+          L.push({k:'hold',pic:o.pic,title:t,kicker:sets>1?`${K}・${s} セット目 / ${sets}`:K,dur:d,label:o.label||'キープ',guide:o.guide,say:'スタート',end:o.endSay});
+          if(s<sets)L.push({k:'rest',pic:o.pic,title:'休憩',kicker:'ひと息',dur:o.rest||20,guide:'楽な姿勢で深呼吸。',say:'休憩です。'});
+        }
+      });
+    }};
+}
+const fmt=s=>s>=60&&s%60===0?`${s/60}分`:`${s}秒`;
+const P2=(a,b,la,lb)=>[{d:a,label:la,g:'up'},{d:b,label:lb,g:'down'}];
+const PD=(a,b,la,lb)=>[{d:a,label:la,g:'down'},{d:b,label:lb,g:'up'}];
+
+/* drawin shared */
+const drawin=(hold,where)=>R({name:'ドローイン',pic:'drawin',reps:5,
+  desc:`息を吐ききっておなかをへこませ、呼吸を続けたまま${hold}秒キープ。`,
+  prepGuide:`${where}背すじを伸ばします。`,prepSay:`ドローインです。${where}背すじを伸ばしましょう。`,
+  ph:[{d:4,label:'息を吸ってふくらませる',g:'up'},{d:4,label:'吐ききってへこませる',g:'down',say:'吐いて、おなかをへこませます'},{d:hold,label:'へこませたままキープ',g:'hold',say:'そのままキープ。呼吸は続けます'}],
+  guide:'おなかをへこませたまま、呼吸は自然に続けます。息は止めません。',sayRep:r=>`${r}回目。吸って`});
+const altTwist=(stand)=>R({name:stand?'立って上半身ひねり':'座って上半身ひねり',pic:stand?'standtwist':'twist',reps:10,alt:true,
+  desc:stand?'足を肩幅に開いて立ち、腰から上だけを左右にひねって3秒キープ。':'腕を胸の前で組み、息を吐きながらひねって3秒キープ。お尻は椅子から浮かせません。',
+  prepGuide:stand?'足を肩幅に開いて立ち、腕を胸の前で組みます。ひざとつま先は正面のまま。':'椅子に深く腰掛けて背すじを伸ばし、腕を胸の前で組みます。',
+  prepSay:stand?'上半身ひねりです。足を肩幅に開いて立ち、腕を胸の前で組みましょう。':'上半身ひねりです。椅子に深く腰掛けて、腕を胸の前で組みましょう。',
+  ph:[{d:3,label:'吐きながら右へひねる',g:'up'},{d:3,label:'キープ',g:'hold'},{d:2,label:'正面にもどす',g:'down'},
+      {d:3,label:'吐きながら左へひねる',g:'up',say:'左へ'},{d:3,label:'キープ',g:'hold'},{d:2,label:'正面にもどす',g:'down'}],
+  guide:'反動をつけず、無理のない範囲で。腰から背中を意識してひねります。',sayRep:r=>`${r}、右へ`});
+const balance=(dur,support)=>H({name:'片脚立ち',pic:'balance',dur,sides:true,
+  desc:support?'机や椅子の背に手を添えて、片足を少し浮かせる。':'机のそばに立ち、手は離して片足を少し浮かせる。ふらついたらすぐ机へ。',
+  prepGuide:b=>support?`机や椅子の背に手を添え、${b}足で立ちます。`:`机のすぐそばで、${b}足で立ちます。手は離します。`,
+  prepSay:a=>support?`片脚立ちです。机に手を添えて、${a}足を床から少し上げてください。`:`片脚立ちです。机のそばで、手を離して、${a}足を少し上げてください。`,
+  guide:'背すじを伸ばして、前を見ます。ふらついたら足をついてかまいません。',endSay:'はい、ゆっくり下ろしてください。'});
+
+
+/* shared exercises for 10s-40s */
+const squat=(reps,sets)=>R({name:'スクワット',pic:'squat2',reps,sets,rest:20,desc:'太ももが床と平行に近づくまで下げる。脚とお尻を鍛えます。',
+  prepGuide:'足を肩幅かそれより少し広めに開いて立ちます。手は胸の前で組むか、前にまっすぐ伸ばします。',prepSay:'スクワットです。足を肩幅に開いて立ち、手は胸の前で組むか、前に伸ばしましょう。',
+  ph:PD(2,2,'お尻を引いて下げる','立ち上がる'),guide:'お尻を後ろに引くように。ひざがつま先より前に出ないように。背中は丸めません。'});
+const jumpSquat=(reps,sets)=>R({name:'ジャンプスクワット',pic:'squat2',reps,sets,rest:30,desc:'しゃがんだ姿勢から真上にジャンプ。着地はひざをやわらかく。',
+  prepGuide:'足を肩幅に開いて立ちます。床がすべらないか確かめましょう。',prepSay:'ジャンプスクワットです。足を肩幅に開いて立ちましょう。',
+  ph:PD(2,1.5,'しゃがむ','真上にジャンプ'),guide:'着地はつま先から静かに。ひざが内側に入らないように。'});
+const lunge=(reps,sets)=>R({name:'ランジ',pic:'lunge',reps,sets,rest:20,alt:true,desc:'片足を大きく前に踏み出して腰を沈める。左右交互に。',
+  prepGuide:'足を腰幅に開いて立ち、手は腰に当てます。',prepSay:'ランジです。手を腰に当てて立ち、左右交互に足を前に踏み出します。',
+  ph:[{d:2,label:'右足を出して沈む',g:'down'},{d:1.5,label:'もどる',g:'up'},{d:2,label:'左足を出して沈む',g:'down',say:'左'},{d:1.5,label:'もどる',g:'up'}],
+  guide:'前のひざは直角くらいまで。ひざがつま先より前に出ないように。きつければ椅子や壁に手を添えて。',sayRep:r=>`${r}、右`});
+const pushup=(reps,sets)=>R({name:'腕立て伏せ',pic:'pushup',reps,sets,rest:30,desc:'頭からお尻（またはひざ）まで一直線のまま。きつい人はひざをついてOK。',
+  prepGuide:'肩の真下に両手をつき、体を一直線にします。きつければひざをついてかまいません。',prepSay:'腕立て伏せです。肩の下に両手をついて、体を一直線にしましょう。',
+  ph:PD(2,1.5,'吸いながら体を下ろす','吐きながら床を押してもどる'),guide:'おなかに力を入れて一直線に。腰が反ったり、お尻が上がったりしないように。'});
+const hipLift=reps=>R({name:'ヒップリフト',pic:'hiplift',reps,desc:'あお向けでひざを立て、お尻を締めながら持ち上げて2秒キープ。お尻ともも裏を鍛えます。',
+  prepGuide:'あお向けに寝てひざを立て、足は肩幅くらいに。両手は体の横の床に置きます。',prepSay:'ヒップリフトです。あお向けに寝てひざを立て、両手は体の横の床に置きましょう。',
+  ph:[{d:2,label:'お尻を締めながら上げる',g:'up'},{d:2,label:'キープ',g:'hold'},{d:2,label:'ゆっくり下ろす',g:'down'}],guide:'肩からひざまで一直線になるところまで。腰を反らせすぎないように。'});
+const burpee=(reps,sets)=>R({name:'バーピー',pic:'burpee',reps,sets,rest:40,desc:'しゃがむ→足をうしろへ→もどす→ジャンプ。全身を使う有酸素運動です。',
+  prepGuide:'足を肩幅に開いて立ちます。まわりに物がないか確かめましょう。',prepSay:'バーピーです。足を肩幅に開いて立ちましょう。',
+  ph:[{d:1,label:'① しゃがんで両手を床に',g:'down'},{d:1,label:'② 両足をうしろへ伸ばす',g:'hold'},{d:1,label:'③ 両足をもどす',g:'hold'},{d:1.2,label:'④ 真上にジャンプ',g:'up'}],
+  guide:'きつければジャンプなしで、立ち上がるだけでOK。'});
+const plank=(dur,sets)=>H({name:'プランク',pic:'plank',dur,sets,rest:20,desc:'ひじとつま先で体を一直線に支えてキープ。きつければひざをついてOK。',
+  prepGuide:()=>'うつ伏せから、ひじを肩の真下について体を持ち上げます。きつければひざをついてかまいません。',prepSay:()=>'プランクです。ひじを肩の真下について、体を一直線にします。',
+  guide:'頭からかかとまで一直線。目線は斜め前。腰が反ったり、お尻が上がったりしないように。',endSay:'はい、下ろしてください。'});
+const sidePlank=dur=>H({name:'サイドプランク',pic:'sideplank',dur,sides:true,sideLabel:a=>`（${a}ひじで支える）`,desc:'横向きで片ひじをつき、体を一直線に持ち上げてキープ。わき腹を鍛えます。',
+  prepGuide:(b,a)=>`横向きになり、${a}ひじを肩の真下につきます。きつければ下のひざをついてOK。`,prepSay:a=>`サイドプランクです。横向きになって、${a}ひじを肩の下についてください。`,
+  guide:'頭から足首まで一直線。おなかとわき腹に力を入れて。腰が落ちたり、体が前後に傾かないように。',endSay:'はい、下ろしてください。'});
+const climber=(dur,sets)=>H({name:'マウンテンクライマー',pic:'climber',dur,sets,rest:30,label:'走るように',desc:'腕立ての姿勢で、ひざを交互に胸へ引きつける。おなかと心肺を鍛えます。',
+  prepGuide:()=>'両手を床について、頭からかかとまで一直線の姿勢になります。',prepSay:()=>'マウンテンクライマーです。腕立て伏せの姿勢になりましょう。',
+  guide:'走るように、左右のひざを交互に胸へ。無理のないペースで、お尻を上げすぎないように。',endSay:'はい、休みましょう。'});
+const jacks=dur=>H({name:'ジャンピングジャック',pic:'jacks',dur,label:'ジャンプ',desc:'ジャンプしながら手足を開いて閉じる。息がはずむ有酸素運動です。',
+  prepGuide:()=>'足をそろえて立ち、腕は体の横に。',prepSay:()=>'ジャンピングジャックです。足をそろえて立ちましょう。',
+  guide:'軽くジャンプして足を開き、両手を頭の上で合わせる。また閉じる。着地はひざを軽く曲げて。',endSay:'はい、ゆっくり歩いて息を整えます。'});
+const march=dur=>H({name:'その場もも上げ',pic:'march',dur,label:'もも上げ',desc:'その場でリズムよく、ももを高く上げて足ぶみ。',
+  prepGuide:()=>'足を腰幅に開いて立ちます。腕も大きく振ります。',prepSay:()=>'その場もも上げです。リズムよく、ももを高く上げて足ぶみします。',
+  guide:'背すじを伸ばし、腕を軽く振りながら左右交互に。ふらつく場合は椅子の背や壁に手を添えて。',endSay:'はい、ゆっくり止まります。'});
+const MENUS={
+ '10':{rest:30,
+  base:[squat(20,2),lunge(12,2),pushup(12,2),burpee(8,2)],
+  belly:[plank(45,2),sidePlank(30),climber(30,2),jacks(60)]},
+ '20':{rest:30,
+  base:[jumpSquat(15,3),lunge(15,2),pushup(20,2),burpee(10,2)],
+  belly:[plank(60,2),sidePlank(45),climber(40,2),jacks(60)]},
+ '30':{rest:30,
+  base:[squat(20,3),lunge(12,2),pushup(15,2),hipLift(20)],
+  belly:[plank(45,3),sidePlank(30),climber(30,2),jacks(60)]},
+ '40':{rest:30,
+  base:[squat(15,3),lunge(10,2),pushup(10,2),hipLift(15)],
+  belly:[plank(40,2),sidePlank(20),march(90)]},
+
+ '70':{rest:30,
+  base:[
+   R({name:'椅子スクワット',pic:'squat',reps:10,sets:2,rest:30,desc:'椅子から立って、ゆっくり座る。太ももとお尻を鍛えます。',
+     prepGuide:'椅子に浅く腰掛け、両足を肩幅に開きます。両腕は前にまっすぐ伸ばします。',
+     prepSay:'椅子スクワットを始めます。椅子に浅く腰掛け、両足を肩幅に開いて、両腕を前に伸ばしましょう。',prepDur:10,
+     ph:P2(2,3,'立ち上がる','ゆっくり座る'),guide:'膝がつま先より前に出ないように。座るときはゆっくり。'}),
+   balance(30,true)],
+  belly:[drawin(10,'椅子に座り、手を太ももの上に置いて'),
+   R({name:'座って膝上げ',pic:'knee',reps:10,alt:true,desc:'椅子に深く腰掛け、太ももが床と平行になるくらいまで上げて2秒キープ。',
+     prepGuide:'椅子に深く腰掛け、背すじを伸ばします。左右交互に膝を上げます。',
+     prepSay:'膝上げです。椅子に深く腰掛けて背すじを伸ばし、左右交互に膝を上げます。',
+     ph:[{d:2,label:'右膝を上げる',g:'up'},{d:2,label:'キープ',g:'hold'},{d:2,label:'ゆっくり下ろす',g:'down'},
+         {d:2,label:'左膝を上げる',g:'up',say:'左'},{d:2,label:'キープ',g:'hold'},{d:2,label:'ゆっくり下ろす',g:'down'}],
+     guide:'太ももが床と平行になるくらいまで。姿勢はまっすぐ保ちます。',sayRep:r=>`${r}、右`}),
+   altTwist(false)]},
+ '60':{rest:30,
+  base:[
+   R({name:'スクワット（うしろに椅子）',pic:'squat2',reps:10,sets:2,rest:30,desc:'椅子をうしろに置き、お尻が座面にふれる手前まで下げて立ち上がる。',
+     prepGuide:'椅子をうしろに置いて立ち、足を肩幅に。両腕は前に伸ばします。',
+     prepSay:'スクワットです。うしろに椅子を置いて、足を肩幅に開き、両腕を前に伸ばしましょう。',
+     ph:PD(3,2,'お尻を引いてゆっくり下げる','立ち上がる'),guide:'お尻を後ろに引くように。座面にはふれる手前で止めます。'}),
+   R({name:'かかと上げ',pic:'heel',reps:15,desc:'かかとを真上に上げて2秒キープ、ゆっくり下ろす。ふくらはぎは「第二の心臓」です。',
+     prepGuide:'足を肩幅に開いてまっすぐ立ちます。ふらつく場合は椅子の背や壁に手を添えます。',prepSay:'かかと上げです。足を肩幅に開いて立ちましょう。ふらつく人は椅子に手を添えてください。',
+     ph:[{d:2,label:'かかとを真上に上げる',g:'up'},{d:2,label:'キープ',g:'hold'},{d:2,label:'ゆっくり下ろす',g:'down'}],guide:'背すじを伸ばし、つま先に体重をかけて。左右のバランスを崩さないように。'}),
+   R({name:'壁腕立て',pic:'wallpush',reps:10,sets:2,desc:'壁に手をついて、ひじを曲げ伸ばし。腕と胸を鍛える、負荷の軽い腕立て伏せです。',
+     prepGuide:'壁から一歩〜一歩半はなれて立ち、両手を肩幅より広めに壁につきます。',prepSay:'壁腕立てです。壁から一歩はなれて立ち、両手を肩幅より広めに壁につきましょう。',
+     ph:PD(3,2,'吸いながら体を壁に近づける','吐きながら壁を押してもどる'),guide:'頭からかかとまで一直線に。足元が滑らない場所で行います。'}),
+   balance(45,false)],
+  belly:[drawin(15,'椅子に座るか立って、'),
+   R({name:'立ってもも上げ',pic:'march',reps:10,alt:true,desc:'机に手を添えて立ち、左右交互にももを高く上げて2秒キープ。',
+     prepGuide:'机に片手を添えて立ちます。背すじを伸ばします。',prepSay:'もも上げです。机に手を添えて立ち、左右交互にももを上げます。',
+     ph:[{d:2,label:'右ももを上げる',g:'up'},{d:2,label:'キープ',g:'hold'},{d:1.5,label:'下ろす',g:'down'},
+         {d:2,label:'左ももを上げる',g:'up',say:'左'},{d:2,label:'キープ',g:'hold'},{d:1.5,label:'下ろす',g:'down'}],
+     guide:'おなかに力を入れて、上体を後ろに倒さないように。',sayRep:r=>`${r}、右`}),
+   altTwist(true)]},
+ '50':{rest:20,
+  base:[
+   squat(15,3),
+   lunge(10,1),
+   R({name:'ひざつき腕立て',pic:'pushup',reps:10,sets:2,desc:'ひざを床について腕立て伏せ。胸と腕、体幹を鍛えます。',
+     prepGuide:'床にひざをつき、肩の真下に両手をつきます。',prepSay:'ひざつき腕立てです。床にひざをついて、肩の下に両手をつきましょう。',
+     ph:PD(2,2,'胸を床に近づける','押し上げる'),guide:'頭からひざまで一直線に。腰を反らさないように。'}),
+   balance(60,false)],
+  belly:[
+   plank(30,2),
+   drawin(20,'立つか座って、'),
+   march(60),
+   altTwist(true)]}
+};
+const CAT={base:'基本メニュー',belly:'おなかメニュー'};
+const blocks=p=>p.menu==='both'?['base','belly']:[p.menu];
+function steps(p=cur()){
+  const M=MENUS[p.tier],L=[];
+  blocks(p).forEach((b,bi)=>{
+    if(bi>0)L.push({k:'rest',title:'休憩',kicker:'ひと息',dur:M.rest,guide:'深呼吸して、次はおなかメニューです。',say:'休憩です。次はおなかメニューです。'});
+    M[b].forEach(e=>e.build(L,p.level,CAT[b]));
+  });
+  return L;
+}
+
+/* ---- home UI ---- */
+document.querySelectorAll('.seg[data-key]').forEach(g=>{
+  g.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{cur()[g.dataset.key]=b.dataset.v;savePeople();paint()}));
+});
+function press(g,v){g.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===String(v))))}
+function paint(){
+  const p=cur();
+  const box=$('people');box.innerHTML='';
+  people.forEach(q=>{const b=document.createElement('button');b.textContent=q.name;b.setAttribute('aria-pressed',String(q.id===p.id));
+    b.onclick=()=>{curId=q.id;savePeople();closeForm();paint()};box.appendChild(b)});
+  const add=document.createElement('button');add.className='add';add.textContent='＋ 家族を追加';add.onclick=()=>openForm(true);box.appendChild(add);
+  $('whoTier').textContent=TIERNAME[p.tier];
+  document.querySelectorAll('.seg[data-key]').forEach(g=>press(g,p[g.dataset.key]));
+  const secs=steps().reduce((a,s)=>a+s.dur,0);
+  $('total').innerHTML=`${esc(p.name)}さん・${TIERNAME[p.tier]}メニュー　所要時間 およそ ${Math.max(1,Math.round(secs/60))} 分　<span class="pts">1回 ${fmtP(ptsOf(p.tier,p.menu,p.level))} ポイント</span>`;
+  const ex=$('exList');ex.innerHTML='';
+  blocks(p).forEach(b=>{
+    const h=document.createElement('h2');h.textContent=(b==='base'?'① ':'② ')+CAT[b];ex.appendChild(h);
+    MENUS[p.tier][b].forEach(e=>{
+      const d=document.createElement('div');d.className='ex';
+      const t=document.createElement('b');t.textContent=`${e.name}　${e.count(p.level)}`;
+      const s=document.createElement('span');s.textContent=e.desc;d.append(t,s);
+      if(e.pic){const im=document.createElement('img');im.src=e.pic+'.jpg';im.alt=e.name+'のイラスト';im.loading='lazy';d.appendChild(im)}
+      ex.appendChild(d);
+    });
+  });
+  calendar();fitPanel();goalPanel();
+}
+let formNew=false,formTier='60',formSex='',delArmed=false;
+$('sexSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{formSex=b.dataset.v;press($('sexSeg'),formSex)});
+function openForm(isNew){
+  formNew=isNew;const p=cur();
+  $('pName').value=isNew?'':p.name;formTier=isNew?'40':p.tier;press($('tierSeg'),formTier);
+  $('pAge').value=isNew?'':(p.age||'');formSex=isNew?'':(p.sex||'');press($('sexSeg'),formSex);
+  $('delBtn').hidden=isNew||people.length<2;delArmed=false;$('delBtn').textContent='この人を削除';
+  $('form').hidden=false;$('pName').focus();
+}
+function closeForm(){$('form').hidden=true}
+$('tierSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{formTier=b.dataset.v;press($('tierSeg'),formTier)});
+$('editBtn').onclick=()=>openForm(false);
+$('cancelBtn').onclick=closeForm;
+$('saveBtn').onclick=()=>{
+  const name=$('pName').value.trim()||'なまえ';
+  const age=parseInt($('pAge').value,10)||null;
+  if(formNew){const id='p'+Date.now();people.push({id,name,tier:formTier,menu:'both',level:'normal',age,sex:formSex||null});curId=id}
+  else{const p=cur();p.name=name;p.tier=formTier;p.age=age;p.sex=formSex||null}
+  savePeople();closeForm();paint();
+};
+$('delBtn').onclick=()=>{
+  if(!delArmed){delArmed=true;$('delBtn').textContent='もう一度押すと削除します（記録も消えます）';return}
+  people=people.filter(p=>p.id!==curId);delete recs[curId];store.set('kt-recs',recs);delete logs[curId];delete goals[curId];delete ghist[curId];delete tests[curId];store.set('kt-tests',tests);saveG();curId=people[0].id;savePeople();closeForm();paint();
+};
+
+/* ---- engine ---- */
+let L=[],i=0,t0=0,paused=false,pausedEl=0,lastRem=-1,lastPhase='',timer=null,lock=null;
+const total=()=>L.reduce((a,s)=>a+s.dur,0);
+const before=n=>L.slice(0,n).reduce((a,s)=>a+s.dur,0);
+async function wake(){try{lock=await navigator.wakeLock.request('screen')}catch(e){lock=null}}
+function unwake(){try{lock&&lock.release()}catch(e){}lock=null}
+function show(id){['home','run','fin','test'].forEach(x=>$(x).hidden=x!==id);window.scrollTo(0,0);if(id==='home'&&pendingRemote){const d=pendingRemote;pendingRemote=null;if((d.rev||0)>syncRev)applyState(d)}}
+function enter(n){
+  i=n;const s=L[i];t0=performance.now();lastRem=-1;lastPhase='';
+  const pic=$('runPic');pic.parentNode.hidden=!s.pic;if(s.pic&&!pic.src.endsWith(s.pic+'.jpg'))pic.src=s.pic+'.jpg';
+  $('kicker').textContent=s.kicker;$('title').textContent=s.title;$('guide').textContent=s.guide;
+  say(s.say);
+}
+function start(){
+  L=steps();show('run');paused=false;$('pauseBtn').textContent='一時停止';wake();enter(0);
+  clearInterval(timer);timer=setInterval(tick,100);
+}
+function tick(){
+  if(paused)return;
+  const s=L[i],el=(performance.now()-t0)/1000;
+  if(el>=s.dur){
+    if(s.k==='hold'&&s.end)say(s.end);
+    if(i+1<L.length)enter(i+1);else finish();
+    return;
+  }
+  const rem=Math.ceil(s.dur-el);
+  $('bar').style.width=((before(i)+el)/total()*100)+'%';
+  if(s.k==='rep'){
+    $('num').textContent=s.rep;$('unit').textContent=`回目 / ${s.of}`;
+    let acc=0,pi=0;while(pi<s.ph.length-1&&el>=acc+s.ph[pi].d){acc+=s.ph[pi].d;pi++}
+    const ph=s.ph[pi],f=(el-acc)/ph.d;
+    if(pi!==lastPhase){if(lastPhase!==''&&ph.say)say(ph.say);lastPhase=pi;$('phase').textContent=ph.label}
+    const h=ph.g==='up'?f:ph.g==='hold'?1:1-f;
+    $('gauge').style.height=(Math.max(0,Math.min(1,h))*100)+'%';
+  }else{
+    $('num').textContent=rem;$('unit').textContent='秒';
+    $('gauge').style.height=((s.dur-el)/s.dur*100)+'%';
+    $('phase').textContent=s.k==='hold'?s.label:s.k==='rest'?'休憩中':'まもなく開始';
+    if(rem!==lastRem){
+      if(s.k==='hold'&&rem!==s.dur&&rem%10===0&&rem>3)say(`あと${rem}秒`);
+      if((s.k==='hold'||s.k==='rest')&&rem<=3)say(String(rem));
+    }
+  }
+  lastRem=rem;
+}
+function togglePause(){
+  if(!paused){paused=true;pausedEl=performance.now()-t0;speechSynthesis&&speechSynthesis.cancel();$('pauseBtn').textContent='再開';$('phase').textContent='一時停止中'}
+  else{paused=false;t0=performance.now()-pausedEl;$('pauseBtn').textContent='一時停止';lastPhase=''}
+}
+function stop(){clearInterval(timer);speechSynthesis&&speechSynthesis.cancel();unwake();show('home')}
+const dkey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+function finish(){
+  clearInterval(timer);unwake();
+  const p=cur(),key=dkey(new Date());
+  const days=recs[p.id]||(recs[p.id]=[]);if(!days.includes(key)){days.push(key);store.set('kt-recs',recs)}
+  const pt=ptsOf(p.tier,p.menu,p.level);
+  (logs[p.id]||(logs[p.id]=[])).push({d:key,tier:p.tier,menu:p.menu,level:p.level,pts:pt});saveG();
+  const st=goalState(p.id);
+  let gl='';if(st&&!st.over){const rest=Math.max(0,st.g.target-st.e);gl=rest>0?`目標まで あと ${fmtP(rest)} ポイントです。`:'目標ポイントを達成しました！'}
+  say(`${p.name}さん、おつかれさまでした。${fmtP(pt)}ポイント獲得です。${gl}`);
+  $('finTitle').textContent=`${p.name}さん、おつかれさまでした`;
+  $('finText').textContent=`${TIERNAME[p.tier]}の${blocks(p).map(b=>CAT[b]).join('と')}ができました。＋${fmtP(pt)} ポイント。${gl}`;
+  paint();show('fin');
+}
+
+/* ---- calendar ---- */
+function calendar(){
+  const now=new Date(),y=now.getFullYear(),m=now.getMonth(),p=cur();
+  const days=new Set(recs[p.id]||[]),pre=`${y}-${String(m+1).padStart(2,'0')}-`;
+  $('calTitle').textContent=`${p.name}さんの${m+1}月`;
+  const c=$('cal');c.innerHTML='';
+  '日月火水木金土'.split('').forEach(w=>{const e=document.createElement('div');e.className='wd';e.textContent=w;c.appendChild(e)});
+  const first=new Date(y,m,1).getDay(),n=new Date(y,m+1,0).getDate();let cnt=0;
+  for(let k=0;k<first;k++)c.appendChild(document.createElement('div'));
+  for(let d=1;d<=n;d++){
+    const e=document.createElement('div');e.className='d';e.textContent=d;
+    if(days.has(pre+String(d).padStart(2,'0'))){e.classList.add('done');cnt++}
+    if(d===now.getDate())e.classList.add('today');
+    c.appendChild(e);
+  }
+  $('calCount').textContent=cnt;
+  const fam=$('fam');fam.innerHTML='';
+  if(people.length>1){
+    const t=document.createElement('span');t.textContent='家族の今月：';fam.appendChild(t);
+    people.forEach(q=>{const k=(recs[q.id]||[]).filter(x=>x.startsWith(pre)).length;
+      const e=document.createElement('span');e.append(q.name+' ');const b=document.createElement('b');b.textContent=k+'日';e.appendChild(b);fam.appendChild(e)});
+  }
+}
+
+/* ---- fitness test ----
+   CS-30 norms: 中谷敏昭ら(2003) 臨床スポーツ医学 20(3) — 年齢群別5段階評価。「ふつう」帯の中央値を各年齢群の代表値に使う。
+   上体起こし: 文部科学省 平成20年度体力・運動能力調査 年齢別平均値。 */
+const CSMID={m:[[25,30],[35,28],[45,27],[55,24.5],[62,22.5],[67,19.5],[72,18],[77,16],[85,15]],
+             f:[[25,25.5],[35,26],[45,25],[55,22],[62,21],[67,19],[72,17],[77,15],[85,14.5]]};
+const CSLV={m:[[38,33,28,23],[37,31,26,21],[36,30,25,20],[32,28,22,18],[32,26,20,14],[26,22,18,14],[25,21,16,12],[22,18,15,11],[20,17,14,10]],
+            f:[[35,29,23,18],[34,29,24,18],[34,28,23,17],[30,25,20,16],[29,24,19,14],[27,22,17,12],[24,20,15,10],[22,18,13,9],[20,17,13,9]]};
+const SUMEAN={m:[[22,28.23],[27,26.51],[32,25.47],[37,24.37],[42,23.45],[47,22.06],[52,20.72],[57,18.94],[62,16.69],[67,13.95],[72,11.87],[77,10.46]],
+              f:[[22,19.96],[27,18.25],[32,17.07],[37,17.14],[42,16.80],[47,16.08],[52,14.08],[57,11.82],[62,10.18],[67,7.83],[72,6.99],[77,6.12]]};
+const LVNAME=['優れている','やや優れている','ふつう','やや劣っている','劣っている'];
+function ageFor(tbl,score){
+  const a=tbl.map(x=>x[0]),v=[];tbl.forEach((x,i)=>v.push(i?Math.min(v[i-1],x[1]):x[1]));
+  if(score>=v[0])return 20;
+  if(score<=v[v.length-1])return Math.min(85,a[a.length-1]+5);
+  for(let i=0;i<v.length-1;i++){
+    if(score<=v[i]&&score>=v[i+1]){if(v[i]===v[i+1])return a[i];return a[i]+(v[i]-score)/(v[i]-v[i+1])*(a[i+1]-a[i])}
+  }
+  return a[a.length-1];
+}
+const csGroup=age=>age<30?0:age<40?1:age<50?2:age<60?3:age<65?4:age<70?5:age<75?6:age<80?7:8;
+function csLevel(sex,age,n){const L=CSLV[sex][csGroup(age)];for(let i=0;i<4;i++)if(n>=L[i])return i;return 4}
+const decade=a=>Math.max(20,Math.floor(a/10)*10);
+let tests=store.get('kt-tests',{});
+
+const TESTS=[
+ {key:'cs',name:'30秒椅子立ち上がり',pic:'cstest',
+  steps:['高さ40cmくらいの、動かない椅子に座ります（壁につけると安全です）。','両腕を胸の前で組みます。','「はじめ」の合図で、ひざがしっかり伸びるまで立ち上がり、すぐに座ります。','30秒で何回できたかを数えます。'],
+  note:'回数は家族にタップしてもらうか、自分で数えて最後に入力してください。'},
+ {key:'su',name:'30秒上体起こし',pic:'sutest',
+  steps:['あお向けに寝て、ひざを90度に曲げます。','両腕を胸の前で組みます。家族に両ひざを押さえてもらいます。','「はじめ」の合図で、両ひじが太ももにつくまで上体を起こし、背中を床にもどします。','30秒で何回できたかを数えます。'],
+  note:'腰や首に痛み・不安がある人は「とばす」を押してください。'}
+];
+let tState=null;
+function fitPanel(){
+  const p=cur(),h=tests[p.id]||[];
+  if(!h.length){$('fitLast').textContent=`${p.name}さんはまだ測定していません。月に1回測ると、体力の変化が分かります。`;$('fitHist').innerHTML='';return}
+  const last=h[h.length-1];
+  $('fitLast').textContent=`${p.name}さんの体力年齢：${decade(last.fit)}歳代（${last.d}）`;
+  const box=$('fitHist');box.innerHTML='';
+  h.slice(-5).reverse().forEach(r=>{const e=document.createElement('span');
+    e.append(`${r.d}　`);const b=document.createElement('b');b.textContent=`${decade(r.fit)}歳代`;e.appendChild(b);
+    e.append(`　椅子立ち上がり ${r.cs??'－'}回／上体起こし ${r.su??'－'}回`);box.appendChild(e)});
+}
+function tSet(kicker,title,html){$('tKicker').textContent=kicker;$('tTitle').textContent=title;$('tBody').innerHTML=html;window.scrollTo(0,0)}
+function fitIntro(){
+  const p=cur();show('test');
+  tSet('体力測定',`${p.name}さんの体力年齢を調べます`,`
+   <div class="panel">
+    <p>2つの測定で、体力が何歳代にあたるかを判定します。どちらも30秒です。</p>
+    <ol class="steps"><li>30秒椅子立ち上がり（脚の筋力）</li><li>30秒上体起こし（おなかの筋力）</li></ol>
+    <div class="row"><label for="tAge">年齢</label><input id="tAge" type="number" inputmode="numeric" min="10" max="100" value="${p.age||''}" placeholder="例：68" style="min-height:56px;font:1.15rem var(--f-body);padding:0 14px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink)"></div>
+    <div class="row"><label id="l-tsex">性別</label><div class="seg" role="group" aria-labelledby="l-tsex" id="tSex"><button data-v="m">男性</button><button data-v="f">女性</button></div></div>
+    <p class="hint" id="tErr"></p>
+   </div>
+   <button class="big" id="tGo">測定をはじめる</button>
+   <button class="ghost" id="tBack">もどる</button>
+   <p class="note">体調の悪い日は測定しないでください。痛みが出たらすぐに中止します。</p>`);
+  let sex=p.sex||'';press($('tSex'),sex);
+  $('tSex').querySelectorAll('button').forEach(b=>b.onclick=()=>{sex=b.dataset.v;press($('tSex'),sex)});
+  $('tBack').onclick=()=>show('home');
+  $('tGo').onclick=()=>{
+    const age=parseInt($('tAge').value,10);
+    if(!age||age<10||age>100){$('tErr').textContent='年齢を数字で入れてください。';return}
+    if(!sex){$('tErr').textContent='性別を選んでください（基準値が男女で違うためです）。';return}
+    p.age=age;p.sex=sex;savePeople();tState={i:0,res:{}};fitTest();
+  };
+}
+function fitTest(){
+  const T=TESTS[tState.i];let count=0,phase='ready',t0=0,timer=null,last=-1;
+  tSet(`体力測定 ${tState.i+1} / ${TESTS.length}`,T.name,`
+   ${T.pic?`<div class="pic"><img src="${T.pic}.jpg" alt="${T.name}のイラスト"></div>`:''}
+   <ol class="steps">${T.steps.map(x=>`<li>${x}</li>`).join('')}</ol>
+   <p class="hint">${T.note}</p>
+   <div class="counter"><span class="n" id="cN">0</span><span class="t" id="cT">30秒</span></div>
+   <button class="tap" id="cTap" disabled>1回（タップ）</button>
+   <div class="adj" id="cAdj" hidden><button class="ghost" id="cMinus">－1</button><button class="ghost" id="cPlus">＋1</button></div>
+   <button class="big" id="cMain">スタート</button>
+   <button class="link" id="cSkip">この測定はとばす</button>`);
+  const upd=()=>{$('cN').textContent=count};
+  $('cTap').onclick=()=>{if(phase==='run'){count++;upd()}};
+  $('cMinus').onclick=()=>{count=Math.max(0,count-1);upd()};
+  $('cPlus').onclick=()=>{count++;upd()};
+  const next=v=>{clearInterval(timer);unwake();tState.res[T.key]=v;tState.i++;tState.i<TESTS.length?fitTest():fitResult()};
+  $('cSkip').onclick=()=>{speechSynthesis&&speechSynthesis.cancel();next(null)};
+  $('cMain').onclick=()=>{
+    if(phase==='ready'){
+      phase='count';t0=performance.now();wake();$('cMain').hidden=true;say('よーい');
+      timer=setInterval(()=>{
+        const el=(performance.now()-t0)/1000;
+        if(phase==='count'){const r=3-Math.floor(el);$('cT').textContent=`はじめまで ${Math.max(1,r)}`;
+          if(r!==last&&r>=1&&el>1){say(String(r))}last=r;
+          if(el>=4){phase='run';t0=performance.now();last=-1;say('はじめ');$('cTap').disabled=false}}
+        else if(phase==='run'){const r=Math.ceil(30-el);$('cT').textContent=`のこり ${Math.max(0,r)}秒`;
+          if(r!==last){if(r===10)say('あと10秒');if(r<=3&&r>=1)say(String(r))}last=r;
+          if(el>=30){phase='done';clearInterval(timer);unwake();say('おわり');$('cTap').disabled=true;$('cT').textContent='回数を確かめて「次へ」';
+            $('cAdj').hidden=false;$('cMain').hidden=false;$('cMain').textContent='次へ'}}
+      },100);
+    }else if(phase==='done')next(count);
+  };
+}
+function fitResult(){
+  const p=cur(),r=tState.res,ages=[],rows=[];
+  if(r.cs!=null){const a=ageFor(CSMID[p.sex],r.cs);ages.push(a);
+    rows.push({n:'30秒椅子立ち上がり',v:`${r.cs}回`,s:`${p.age}歳の${p.sex==='m'?'男性':'女性'}としては「${LVNAME[csLevel(p.sex,p.age,r.cs)]}」。脚の体力は${decade(a)}歳代です。`})}
+  if(r.su!=null){const a=ageFor(SUMEAN[p.sex],r.su);ages.push(a);
+    rows.push({n:'30秒上体起こし',v:`${r.su}回`,s:`おなかの体力は${decade(a)}歳代です。`})}
+  if(!ages.length){tSet('体力測定','結果',`<p>測定をすべてとばしたため、判定できませんでした。</p><button class="big" id="tHome">メニューにもどる</button>`);$('tHome').onclick=()=>{paint();show('home')};return}
+  const fitAge=ages.reduce((a,b)=>a+b,0)/ages.length,dec=decade(fitAge),real=p.age<20?20:decade(p.age);
+  let msg=dec>20?`${dec-10}歳代を目指して頑張りましょう。`:'このすばらしい体力をキープしましょう。';
+  const cmp=dec<real?'実際の年齢より若い体力です！':dec>real?'実際の年齢より上の体力です。少しずつ取り戻しましょう。':'年齢相応の体力です。';
+  const sug=String(p.age<20&&dec===20?10:Math.min(70,dec));
+  const d=dkey(new Date()),prev=(tests[p.id]||[]).slice(-1)[0],cur_={d,cs:r.cs,su:r.su,fit:Math.round(fitAge)};
+  (tests[p.id]||(tests[p.id]=[])).push(cur_);store.set('kt-tests',tests);
+  const cmpHtml=prev?compareHtml(prev,cur_):'';
+  const ev=evalGoal(p,prev,cur_);
+  say(`${p.name}さんの体力は、現在${dec}歳代です。${msg}${ev?ev.say:''}`);
+  tSet('体力測定の結果',`${p.name}さんの体力年齢`,`
+   <div class="panel verdict"><span>あなたの体力は、現在</span><span class="age">${dec}歳代</span><p class="msg">${msg}</p><p class="lead">${cmp}</p></div>
+   ${ev?ev.html:''}
+   ${cmpHtml}
+   <div class="panel">${rows.map(x=>`<div class="score"><b>${x.n}</b><span class="v">${x.v}</span><span class="s">${x.s}</span></div>`).join('')}
+    <p class="hint">2つの測定の平均から判定しています。判定は目安です。1か月ごとに測って、変化を見てください。</p></div>
+   ${sug!==p.tier?`<button class="big" id="tTier">運動メニューを${TIERNAME[sug]}にする</button>`:''}
+   ${ev?'<button class="big" id="tNext">次の目標を立てる</button>':''}
+   <button class="${sug!==p.tier||ev?'ghost':'big'}" id="tHome">メニューにもどる</button>`);
+  if($('tNext'))$('tNext').onclick=()=>goalForm(ev.nextPlan);
+  if($('tTier'))$('tTier').onclick=()=>{p.tier=sug;savePeople();paint();show('home')};
+  $('tHome').onclick=()=>{paint();show('home')};
+}
+/* ---- points & goals ----
+   年代メニュー1回（①＋②両方・ふつう）のポイント。60代=2、40代=6 なので
+   「60代×5回」=10pt =「60代×2回＋40代×1回」。①か②だけは半分、強さで0.6/1/1.4倍。 */
+const W={'10':8,'20':10,'30':8,'40':6,'50':4,'60':2,'70':1};
+const ptsOf=(tier,menu,level)=>Math.round(W[tier]*(menu==='both'?1:.5)*LV[level]*10)/10;
+const fmtP=n=>String(Math.round(n*10)/10);
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let logs=store.get('kt-logs',{}),goals=store.get('kt-goals',{}),ghist=store.get('kt-goalhist',{});
+function saveG(){store.set('kt-logs',logs);store.set('kt-goals',goals);store.set('kt-goalhist',ghist)}
+const kd=k=>{const [y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d)};
+const addD=(d,n)=>{const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()+n);return x};
+const dBetween=(a,b)=>Math.round((kd(b)-kd(a))/864e5);
+const fmtD=k=>{const d=kd(k);return `${d.getMonth()+1}月${d.getDate()}日`};
+function periodDays(per,s){if(per==='week')return 7;const e=new Date(s.getFullYear(),s.getMonth()+1,s.getDate());return Math.round((e-new Date(s.getFullYear(),s.getMonth(),s.getDate()))/864e5)}
+const planText=pl=>'毎日 '+pl.map(x=>`${TIERNAME[x.tier]}メニュー${x.n}回`).join('＋');
+const earned=(pid,g)=>(logs[pid]||[]).filter(l=>l.d>=g.start&&l.d<=g.end).reduce((a,l)=>a+l.pts,0);
+function goalState(pid){
+  const g=goals[pid];if(!g)return null;
+  const today=dkey(new Date()),e=earned(pid,g),elapsed=Math.min(g.days,Math.max(0,dBetween(g.start,today)+1));
+  return {g,e,today,elapsed,over:today>g.end,pace:g.target*elapsed/g.days,left:Math.max(0,dBetween(today,g.end)+1)};
+}
+function goalPanel(){
+  const p=cur(),st=goalState(p.id),box=$('goalBody');
+  if(!st){
+    const last=(ghist[p.id]||[]).slice(-1)[0];
+    box.innerHTML=`<p class="lead">1週間か1か月の目標を決めて、ポイントをためましょう。どの年代のメニューでもポイントになります。期間が終わったら体力測定で成果を確かめます。</p>`+
+      (last?`<p class="hint">前回の目標（${fmtD(last.start)}〜${fmtD(last.end)}）：達成率 ${Math.round(last.ach*100)}%</p>`:'');
+    $('goalPeriod').textContent='';$('goalBtn').textContent='目標を立てる';return;
+  }
+  const {g,e,over,pace,left}=st,pct=Math.min(100,e/g.target*100),pp=Math.min(100,pace/g.target*100);
+  $('goalPeriod').textContent=`${fmtD(g.start)}〜${fmtD(g.end)}`;
+  let line;
+  if(over)line='期間が終わりました。体力測定をして、成果を確かめましょう。';
+  else{
+    const need=Math.max(0,g.target-e),diff=e-pace,per=need/left,one=ptsOf(p.tier,p.menu,p.level);
+    line=(need<=0?'目標ポイントを達成しました！このまま続けましょう。':
+      (diff>=0?`予定より ${fmtP(diff)} ポイント先行しています。`:`予定より ${fmtP(-diff)} ポイント遅れています。`)+
+      `のこり${left}日。1日 ${fmtP(per)} ポイント（今のメニューなら約${fmtP(per/one)}回）で達成です。`);
+  }
+  const tl=tests[p.id]||[],hasBase=tl.some(t=>t.d>=dkey(addD(kd(g.start),-14)));
+  box.innerHTML=`<div class="gnum"><b>${fmtP(e)}</b> / ${fmtP(g.target)} ポイント（${Math.floor(e/g.target*100)}%）</div>
+    <div class="gbar" role="progressbar" aria-valuemin="0" aria-valuemax="${g.target}" aria-valuenow="${e}" aria-label="目標の達成度"><i style="width:${pct}%"></i>${over?'':`<span class="pace" style="left:${pp}%"></span>`}</div>
+    ${over?'':'<div class="glegend"><span>たまったポイント</span><span><span class="pk"></span>今日までの予定</span></div>'}
+    <p>${line}</p>
+    <p class="hint">目標：${planText(g.plan)}（${g.period==='week'?'1週間':'1か月'}）</p>
+    ${over?'<button class="big" id="goalTest">体力測定をして評価する</button>':(!hasBase?'<p class="hint">スタート時の体力をまだ測っていません。今測っておくと、期間のあとで比べられます。</p><button class="ghost" id="goalBase">スタート時の体力測定をする</button>':'')}`;
+  if($('goalTest'))$('goalTest').onclick=fitIntro;
+  if($('goalBase'))$('goalBase').onclick=fitIntro;
+  $('goalBtn').textContent=over?'評価しないで新しい目標を立てる':'目標を立て直す';
+}
+function goalForm(pre){
+  const p=cur(),old=goals[p.id];show('test');
+  let per=old?old.period:'week',plan=(pre||old?.plan||[{tier:p.tier,n:1}]).map(x=>({...x}));
+  if(pre&&pre.per)per=pre.per;
+  if(!Array.isArray(plan)||!plan.length)plan=[{tier:p.tier,n:1}];
+  const render=()=>{
+    const perDay=plan.reduce((a,x)=>a+W[x.tier]*x.n,0),days=periodDays(per,new Date()),target=perDay*days;
+    tSet('目標',`${esc(p.name)}さんの目標を立てる`,`
+     <div class="panel">
+      <div class="row"><label id="l-per">期間</label><div class="seg" role="group" aria-labelledby="l-per" id="gPer"><button data-v="week">1週間</button><button data-v="month">1か月</button></div></div>
+      <div class="row"><label>毎日やるメニュー</label>
+       ${plan.map((x,i)=>`<div class="plan"><select class="gTier" data-i="${i}" aria-label="年代メニュー">${Object.keys(TIERNAME).map(t=>`<option value="${t}"${t===x.tier?' selected':''}>${TIERNAME[t]}メニュー（1回 ${W[t]}ポイント）</option>`).join('')}</select>
+         <div class="stepper"><button class="ghost gM" data-i="${i}" aria-label="回数を減らす">－</button><span>${x.n}回</span><button class="ghost gP" data-i="${i}" aria-label="回数を増やす">＋</button></div>
+         ${plan.length>1?`<button class="link gDel" data-i="${i}">消す</button>`:''}</div>`).join('')}
+       <button class="ghost" id="gAdd">＋ 別の年代のメニューを足す</button></div>
+      <div class="gsum"><span>1日 ${fmtP(perDay)} ポイント × ${days}日</span><b>目標 ${fmtP(target)} ポイント</b></div>
+      <p class="hint">ポイントは「①＋② 両方・ふつう」でやったときの数字です。①か②だけなら半分、「かるめ」は0.6倍、「しっかり」は1.4倍になります。</p>
+      <p class="hint">若い年代のメニューほどきついので、ポイントが高くなります。たとえば「毎日60代メニュー5回」と「毎日60代2回＋40代1回」は、どちらも1日10ポイントです。</p>
+     </div>
+     <button class="big" id="gSave">この目標ではじめる</button>
+     <button class="ghost" id="gBack">もどる</button>
+     ${old?'<button class="link" id="gStop">いまの目標をやめる</button>':''}`);
+    press($('gPer'),per);
+    $('gPer').querySelectorAll('button').forEach(b=>b.onclick=()=>{per=b.dataset.v;render()});
+    document.querySelectorAll('.gTier').forEach(el=>el.onchange=()=>{plan[+el.dataset.i].tier=el.value;render()});
+    document.querySelectorAll('.gM').forEach(b=>b.onclick=()=>{const x=plan[+b.dataset.i];x.n=Math.max(1,x.n-1);render()});
+    document.querySelectorAll('.gP').forEach(b=>b.onclick=()=>{const x=plan[+b.dataset.i];x.n=Math.min(10,x.n+1);render()});
+    document.querySelectorAll('.gDel').forEach(b=>b.onclick=()=>{plan.splice(+b.dataset.i,1);render()});
+    $('gAdd').onclick=()=>{plan.push({tier:p.tier,n:1});render()};
+    $('gBack').onclick=()=>{paint();show('home')};
+    if($('gStop'))$('gStop').onclick=()=>{
+      if($('gStop').dataset.armed){delete goals[p.id];saveG();paint();show('home')}
+      else{$('gStop').dataset.armed='1';$('gStop').textContent='もう一度押すと、いまの目標をやめます'}};
+    $('gSave').onclick=()=>{
+      const s=new Date();goals[p.id]={period:per,start:dkey(s),end:dkey(addD(s,days-1)),days,target,plan};saveG();
+      say(`目標を立てました。${days}日で${fmtP(target)}ポイントです。がんばりましょう。`);paint();show('home');
+    };
+  };
+  render();
+}
+function compareHtml(a,b){
+  const row=(n,x,y,unit,better)=>{
+    if(x==null||y==null)return `<span>${n}</span><span>${x??'－'}${x!=null?unit:''}</span><span>→ ${y??'－'}${y!=null?unit:''}</span><span></span>`;
+    const d=y-x,good=better==='up'?d>0:d<0;
+    return `<span>${n}</span><span>${x}${unit}</span><span>→ ${y}${unit}</span><span class="${d===0?'':good?'up':'dn'}">${d===0?'同じ':unit==='歳代'?(d<0?`${-d}歳 若返り`:`${d}歳 上がった`):(d>0?'＋':'－')+Math.abs(d)+unit}</span>`};
+  return `<div class="panel"><h2>前回（${fmtD(a.d)}）とくらべて</h2>
+   <div class="cmp"><span class="h">項目</span><span class="h">前回</span><span class="h">今回</span><span class="h">変化</span>
+   ${row('体力年齢',decade(a.fit),decade(b.fit),'歳代','down')}${row('椅子立ち上がり',a.cs,b.cs,'回','up')}${row('上体起こし',a.su,b.su,'回','up')}</div></div>`;
+}
+function evalGoal(p,prev,now){
+  const st=goalState(p.id);if(!st||!st.over)return null;
+  const g=st.g,ach=st.e/g.target,got=ach>=1;
+  const df=prev?decade(prev.fit)-decade(now.fit):0;
+  const better=prev&&((now.cs??0)-(prev.cs??0)+(now.su??0)-(prev.su??0)>0);
+  let head,body;
+  if(got&&df>0){head='目標達成！体力年齢も若返りました！';body='すばらしい成果です。次は目標を少し上げてみましょう。'}
+  else if(got&&better){head='目標達成！回数も増えています。';body='体力年齢が変わるまで、もう少しです。この調子で続けましょう。'}
+  else if(got){head='目標達成！よく続けました。';body='体力の数字はまだ変わっていませんが、続けることで少しずつ変わってきます。'}
+  else if(ach>=.7&&(df>0||better)){head='あと一歩でした。でも体力は上がっています！';body='次は同じくらいの目標で、達成を目指しましょう。'}
+  else if(ach>=.7){head='あと一歩でした。';body='次は同じくらいの目標で、達成を目指しましょう。'}
+  else{head='目標には届きませんでした。';body='次は目標を少し軽くして、まず「続けること」を目指しましょう。'}
+  if(!prev)body+=' 前回の測定がないため、体力の変化はくらべられませんでした。';
+  const scale=got?1.2:ach>=.7?1:.7;
+  const nextPlan=g.plan.map(x=>({tier:x.tier,n:x.n}));
+  if(scale!==1){const want=g.plan.reduce((a,x)=>a+W[x.tier]*x.n,0)*scale;let cur=nextPlan.reduce((a,x)=>a+W[x.tier]*x.n,0);
+    if(scale>1){nextPlan[0].n++}else{for(const x of nextPlan){while(x.n>1&&cur-W[x.tier]>=want){x.n--;cur-=W[x.tier]}}}}
+  nextPlan.per=g.period;
+  (ghist[p.id]||(ghist[p.id]=[])).push({start:g.start,end:g.end,target:g.target,earned:st.e,ach,fitBefore:prev?prev.fit:null,fitAfter:now.fit});
+  delete goals[p.id];saveG();
+  return {say:head,nextPlan,html:`<div class="panel"><h2>目標の評価（${fmtD(g.start)}〜${fmtD(g.end)}）</h2>
+    <div class="gnum"><b>${Math.round(ach*100)}%</b>　${fmtP(st.e)} / ${fmtP(g.target)} ポイント</div>
+    <div class="gbar"><i style="width:${Math.min(100,ach*100)}%"></i></div>
+    <p class="msg" style="font-family:var(--f-display);font-weight:700;font-size:1.25rem">${head}</p><p>${body}</p></div>`};
+}
+$('goalBtn').onclick=()=>goalForm();
+
+$('fitBtn').onclick=fitIntro;
+
+/* ---- sync across devices (claude.ai db, private per signed-in person) ----
+   すべての記録を1つの文書 data/users/<id>/kintore にまとめて保存。
+   localStorage はその端末の控え（電波がないときもすぐ表示できるように）。 */
+var syncRef=null,syncWriting=Promise.resolve(),syncRev=store.get('kt-rev',0),pendingRemote=null;
+function syncMsg(t,cls){const e=$('syncLine');e.textContent=t;e.className='sync'+(cls?' '+cls:'')}
+const hhmm=d=>`${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+function packState(){
+  const L={};for(const k in logs)L[k]=logs[k].map(l=>[l.d,l.tier,l.menu,l.level,l.pts].join('|'));
+  return {v:1,rev:syncRev,people,recs,tests,logs:L,goals,ghist};
+}
+function applyState(d){
+  people=Array.isArray(d.people)&&d.people.length?d.people:people;
+  recs=d.recs||{};tests=d.tests||{};goals=d.goals||{};ghist=d.ghist||{};
+  logs={};const L=d.logs||{};for(const k in L)logs[k]=L[k].map(x=>{const a=String(x).split('|');return {d:a[0],tier:a[1],menu:a[2],level:a[3],pts:+a[4]}});
+  syncRev=d.rev||0;syncDirty=false;
+  try{for(const [k,v] of [['kt-people',people],['kt-recs',recs],['kt-tests',tests],['kt-logs',logs],['kt-goals',goals],['kt-goalhist',ghist],['kt-rev',syncRev]])localStorage.setItem(k,JSON.stringify(v))}catch(e){}
+  if(!people.find(q=>q.id===curId))curId=people[0].id;
+  paint();
+}
+function pushSync(){
+  if(!syncRef)return;
+  syncDirty=false;syncRev=Date.now();try{localStorage.setItem('kt-rev',JSON.stringify(syncRev))}catch(e){}
+  const body=packState();
+  syncWriting=syncWriting.then(()=>syncRef.set(body)).then(()=>syncMsg(`ほかの端末と同期しました（${hhmm(new Date())}）`,'on'),e=>{
+    if(e&&e.code==='quota_exceeded'||e&&e.code==='invalid_argument')syncMsg('記録が多すぎて同期できませんでした。この端末には保存されています。','warn');
+    else{syncDirty=true;syncMsg('同期できませんでした。この端末には保存されています。電波のあるところで開き直してください。','warn')}
+  });
+}
+function onHome(){return !$('home').hidden}
+async function startSync(){
+  try{
+    const [db,user]=await Promise.all([window.claude?.use?.('db'),window.claude?.use?.('user')]);
+    if(!db||!user){syncMsg('この端末だけに保存しています（同期するには claude.ai にログインして開いてください）');return}
+    const uid=await user.id();
+    if(!uid){syncMsg('この端末だけに保存しています（同期するには claude.ai にログインして開いてください）');return}
+    syncRef=db.doc('data/users/'+uid+'/kintore');
+    syncMsg('ほかの端末と同期しています…');
+    let first=true;
+    const t=setTimeout(()=>{if(first)syncMsg('同期先につながりません。この端末の記録を表示しています。','warn')},10000);
+    syncRef.onSnapshot(snap=>{
+      if(snap.metadata.hasPendingWrites)return;
+      if(!snap.metadata.fromCache){clearTimeout(t)}
+      if(!snap.exists){ if(first&&!snap.metadata.fromCache){first=false;syncReady=true;pushSync()} return }
+      const d=snap.data(),remoteRev=d.rev||0;
+      if(remoteRev>syncRev){ if(onHome())applyState(d);else pendingRemote=d }
+      else if(remoteRev<syncRev&&!snap.metadata.fromCache&&first){syncReady=true;pushSync()}
+      if(!snap.metadata.fromCache){first=false;syncReady=true;if(syncDirty)queueSync();
+        if(!$('syncLine').classList.contains('warn'))syncMsg(`ほかの端末と同期しています（${hhmm(new Date())}）`,'on')}
+    },e=>{clearTimeout(t);syncMsg('同期が止まりました。この端末には保存されています。ページを開き直すと再開します。','warn')});
+  }catch(e){syncMsg('この端末だけに保存しています')}
+}
+
+/* ---- backup (standalone) ---- */
+$('expBtn').onclick=()=>{
+  const data=packState();data.app='wagaya-taiso';data.exportedAt=new Date().toISOString();
+  const blob=new Blob([JSON.stringify(data)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`taiso-kiroku-${dkey(new Date())}.json`;
+  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+  $('bkMsg').textContent='書き出しました。ダウンロードしたファイルを、もう一方の端末に送ってください。';
+};
+$('impFile').onchange=()=>{
+  const f=$('impFile').files[0];if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{const d=JSON.parse(rd.result);if(d.app!=='wagaya-taiso'||!Array.isArray(d.people))throw 0;
+      applyState(d);$('bkMsg').textContent=`読み込みました（${d.exportedAt?new Date(d.exportedAt).toLocaleString('ja-JP'):''}の記録）。`;say('記録を読み込みました。')}
+    catch(e){$('bkMsg').textContent='このファイルは読み込めませんでした。「記録を書き出す」で作ったファイルを選んでください。'}
+    $('impFile').value='';
+  };
+  rd.readAsText(f);
+};
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+
+$('startBtn').onclick=start;
+$('testBtn').onclick=()=>say('こんにちは。この声で数を数えます。いち、に、さん。');
+$('pauseBtn').onclick=togglePause;
+$('stopBtn').onclick=stop;
+$('backBtn').onclick=()=>show('home');
+paint();
+})();
+</script>
+
+</body>
+</html>
