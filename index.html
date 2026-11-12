@@ -139,6 +139,21 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
 .cmp .up{color:var(--accent);font-weight:700}
 .cmp .dn{color:var(--warm);font-weight:700}
 .pts{font-weight:700;color:var(--accent)}
+.guide-d summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:44px}
+.guide-d summary::-webkit-details-marker{display:none}
+.guide-d summary::after{content:"ひらく";font-weight:700;color:var(--accent);font-size:.95rem;flex:none}
+.guide-d[open] summary::after{content:"とじる"}
+.guide-d summary:focus-visible{outline:3px solid var(--warm);outline-offset:3px;border-radius:8px}
+.gd{display:flex;flex-direction:column;gap:12px;padding-top:12px}
+.gd h3{font-family:var(--f-display);font-size:1.1rem;margin:4px 0 0}
+.gd ul{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:6px}
+.tbl{overflow-x:auto}
+.tbl table{border-collapse:collapse;width:100%;min-width:480px;font-size:.95rem}
+.tbl th,.tbl td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+.tbl thead th{color:var(--muted);font-size:.85rem}
+.tbl tbody th{white-space:nowrap}
+.tbl small{display:block;font-weight:400;color:var(--muted);font-size:.8rem}
+.nowtip{border-left:4px solid var(--accent);padding-left:12px}
 .skip{color:var(--warm);font-weight:700}
 .gnum b.neg{color:var(--warm)}
 @media (prefers-reduced-motion: reduce){.gauge i{transition:none}}
@@ -186,6 +201,7 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
       <div class="seg" role="group" aria-labelledby="l-level" data-key="level">
         <button id="lv-l" data-v="light">かるめ</button><button id="lv-n" data-v="normal">ふつう</button><button id="lv-h" data-v="hard">しっかり</button></div></div>
     <p class="lead" id="total"></p>
+    <p class="nowtip" id="nowTip"></p>
     <button class="big" id="startBtn">はじめる</button>
     <button class="ghost" id="testBtn">声のテスト</button>
   </section>
@@ -195,6 +211,33 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
     <p class="lead" id="fitLast"></p>
     <div class="hist" id="fitHist"></div>
     <button class="ghost" id="fitBtn">体力測定をする（約3分）</button>
+  </section>
+
+  <section class="panel" aria-label="効果的な使い方">
+    <details class="guide-d" id="guideBox">
+      <summary><h2>効果的な1日の使い方</h2></summary>
+      <div class="gd">
+        <p>一度にまとめてやるより、<b>1日の中で分けて、こまめに動く</b>ほうが続けやすく効果的です。①基本と②おなかは別々にやってもポイントは同じです（それぞれ半分ずつ）。</p>
+        <div class="tbl"><table>
+          <thead><tr><th>時間帯</th><th>やること</th><th>ねらい</th></tr></thead>
+          <tbody>
+            <tr><th>朝<small>起きて30分〜1時間後</small></th><td>② おなか</td><td>体を目覚めさせる。軽めで安全</td></tr>
+            <tr><th>昼食後〜夕方</th><td>① 基本</td><td>筋トレの本番。体が一番よく動く時間帯</td></tr>
+            <tr><th>夕食後30分ごろ</th><td>その場もも上げ1〜2分、または10分の散歩</td><td>食後の血糖値の上がりすぎを抑える。おなか周りの対策に</td></tr>
+            <tr><th>寝る前</th><td>軽いストレッチだけ</td><td>激しい運動は寝つきを悪くする</td></tr>
+          </tbody></table></div>
+        <h3>時間帯の注意</h3>
+        <ul>
+          <li><b>起きてすぐは避ける。</b>朝は血圧が上がりやすく体も硬いので、30分以上たってから。</li>
+          <li><b>食後すぐの激しい運動は避ける。</b>30分ほどたってから、軽い足ぶみ程度に。</li>
+          <li><b>筋肉痛が残っている日は①基本を休み</b>、②おなかと散歩だけに。筋肉は休んでいる間に強くなります。</li>
+          <li>忙しい日は、朝の②おなかだけでもやれば「サボり」になりません。</li>
+        </ul>
+        <h3 id="gdTitle">1週間の目安</h3>
+        <ul id="gdWeek"></ul>
+        <p class="hint">出典：厚生労働省「健康づくりのための身体活動・運動ガイド2023」</p>
+      </div>
+    </details>
   </section>
 
   <section class="panel" aria-label="運動の内容" id="exList"></section>
@@ -476,7 +519,7 @@ function paint(){
       ex.appendChild(d);
     });
   });
-  calendar();fitPanel();goalPanel();
+  calendar();fitPanel();goalPanel();guidePanel();
 }
 let formNew=false,formTier='60',formSex='',delArmed=false;
 $('sexSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{formSex=b.dataset.v;press($('sexSeg'),formSex)});
@@ -861,6 +904,21 @@ function evalGoal(p,prev,now){
 }
 $('goalBtn').onclick=()=>goalForm();
 
+function guidePanel(){
+  const p=cur(),old=+p.tier>=60,ul=$('gdWeek');
+  $('gdTitle').textContent=old?'1週間の目安（65歳以上）':'1週間の目安（大人）';
+  const items=old?['筋トレ（①基本）は週2〜3日以上。60代・70代メニューの「ふつう」なら毎日でも大丈夫です。','筋力・バランス・柔軟性を組み合わせた運動を週3日以上（このアプリのメニューがそれにあたります）。','歩くなどの活動を1日40分以上（約6,000歩）。','座りっぱなしの時間を長くしない。こまめに立って動く。']
+                 :['筋トレ（①基本）は週2〜3日以上。きつい年代のメニューは1日おきでも十分です。','息がはずむ運動を週60分以上（ジャンプ系・もも上げなど）。','歩くなどの活動を1日60分以上（約8,000歩）。','座りっぱなしの時間を長くしない。こまめに立って動く。'];
+  ul.innerHTML='';items.forEach(t=>{const li=document.createElement('li');li.textContent=t;ul.appendChild(li)});
+  const h=new Date().getHours();let tip;
+  if(h<5||h>=22)tip='今は夜おそい時間です。激しい運動はやめて、軽いストレッチだけにしましょう。';
+  else if(h<11)tip='今は朝です。②おなかがおすすめです（起きて30分以上たってから）。';
+  else if(h<18)tip='今は昼〜夕方です。①基本（筋トレ）に一番向いている時間帯です。';
+  else tip='今は夜です。夕食後30分ほどたってから、その場もも上げや軽い運動を。';
+  $('nowTip').textContent=tip;
+}
+try{if(localStorage.getItem('kt-guide-open')==='1')$('guideBox').open=true}catch(e){}
+$('guideBox').addEventListener('toggle',()=>{try{localStorage.setItem('kt-guide-open',$('guideBox').open?'1':'0')}catch(e){}});
 $('fitBtn').onclick=fitIntro;
 
 /* ---- sync across devices (claude.ai db, private per signed-in person) ----
