@@ -139,6 +139,8 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
 .cmp .up{color:var(--accent);font-weight:700}
 .cmp .dn{color:var(--warm);font-weight:700}
 .pts{font-weight:700;color:var(--accent)}
+.skip{color:var(--warm);font-weight:700}
+.gnum b.neg{color:var(--warm)}
 @media (prefers-reduced-motion: reduce){.gauge i{transition:none}}
 </style>
 
@@ -735,10 +737,18 @@ const fmtD=k=>{const d=kd(k);return `${d.getMonth()+1}月${d.getDate()}日`};
 function periodDays(per,s){if(per==='week')return 7;const e=new Date(s.getFullYear(),s.getMonth()+1,s.getDate());return Math.round((e-new Date(s.getFullYear(),s.getMonth(),s.getDate()))/864e5)}
 const planText=pl=>'毎日 '+pl.map(x=>`${TIERNAME[x.tier]}メニュー${x.n}回`).join('＋');
 const earned=(pid,g)=>(logs[pid]||[]).filter(l=>l.d>=g.start&&l.d<=g.end).reduce((a,l)=>a+l.pts,0);
+const penOf=g=>g.penalty!=null?g.penalty:g.target/g.days/2;
+function missedDays(pid,g,today){
+  const done=new Set((logs[pid]||[]).map(l=>l.d)),last=today>g.end?g.end:dkey(addD(kd(today),-1)),out=[];
+  for(let d=kd(g.start);dkey(d)<=last;d=addD(d,1)){const k=dkey(d);if(!done.has(k))out.push(k)}
+  return out;
+}
 function goalState(pid){
   const g=goals[pid];if(!g)return null;
-  const today=dkey(new Date()),e=earned(pid,g),elapsed=Math.min(g.days,Math.max(0,dBetween(g.start,today)+1));
-  return {g,e,today,elapsed,over:today>g.end,pace:g.target*elapsed/g.days,left:Math.max(0,dBetween(today,g.end)+1)};
+  const today=dkey(new Date()),raw=earned(pid,g),miss=missedDays(pid,g,today),pen=penOf(g),minus=miss.length*pen,e=raw-minus;
+  const doneToday=(logs[pid]||[]).some(l=>l.d===today);
+  const elapsed=Math.min(g.days,Math.max(0,dBetween(g.start,today)+1));
+  return {g,e,raw,miss:miss.length,pen,minus,doneToday,today,elapsed,over:today>g.end,pace:g.target*elapsed/g.days,left:Math.max(0,dBetween(today,g.end)+1)};
 }
 function goalPanel(){
   const p=cur(),st=goalState(p.id),box=$('goalBody');
@@ -748,7 +758,7 @@ function goalPanel(){
       (last?`<p class="hint">前回の目標（${fmtD(last.start)}〜${fmtD(last.end)}）：達成率 ${Math.round(last.ach*100)}%</p>`:'');
     $('goalPeriod').textContent='';$('goalBtn').textContent='目標を立てる';return;
   }
-  const {g,e,over,pace,left}=st,pct=Math.min(100,e/g.target*100),pp=Math.min(100,pace/g.target*100);
+  const {g,e,over,pace,left}=st,pct=Math.max(0,Math.min(100,e/g.target*100)),pp=Math.min(100,pace/g.target*100);
   $('goalPeriod').textContent=`${fmtD(g.start)}〜${fmtD(g.end)}`;
   let line;
   if(over)line='期間が終わりました。体力測定をして、成果を確かめましょう。';
@@ -759,9 +769,11 @@ function goalPanel(){
       `のこり${left}日。1日 ${fmtP(per)} ポイント（今のメニューなら約${fmtP(per/one)}回）で達成です。`);
   }
   const tl=tests[p.id]||[],hasBase=tl.some(t=>t.d>=dkey(addD(kd(g.start),-14)));
-  box.innerHTML=`<div class="gnum"><b>${fmtP(e)}</b> / ${fmtP(g.target)} ポイント（${Math.floor(e/g.target*100)}%）</div>
+  const skip=st.pen>0?(st.miss?`<p class="skip">サボった日 ${st.miss}日：−${fmtP(st.minus)} ポイント（運動でたまった ${fmtP(st.raw)} ポイントから引いています）</p>`:'<p class="hint">サボった日はありません。この調子です！</p>')+(!over&&!st.doneToday?`<p class="skip">今日はまだ運動していません。やらないと、明日 −${fmtP(st.pen)} ポイントになります。</p>`:''):'';
+  box.innerHTML=`<div class="gnum"><b class="${e<0?'neg':''}">${fmtP(e)}</b> / ${fmtP(g.target)} ポイント（${Math.floor(e/g.target*100)}%）</div>
     <div class="gbar" role="progressbar" aria-valuemin="0" aria-valuemax="${g.target}" aria-valuenow="${e}" aria-label="目標の達成度"><i style="width:${pct}%"></i>${over?'':`<span class="pace" style="left:${pp}%"></span>`}</div>
     ${over?'':'<div class="glegend"><span>たまったポイント</span><span><span class="pk"></span>今日までの予定</span></div>'}
+    ${skip}
     <p>${line}</p>
     <p class="hint">目標：${planText(g.plan)}（${g.period==='week'?'1週間':'1か月'}）</p>
     ${over?'<button class="big" id="goalTest">体力測定をして評価する</button>':(!hasBase?'<p class="hint">スタート時の体力をまだ測っていません。今測っておくと、期間のあとで比べられます。</p><button class="ghost" id="goalBase">スタート時の体力測定をする</button>':'')}`;
@@ -771,7 +783,7 @@ function goalPanel(){
 }
 function goalForm(pre){
   const p=cur(),old=goals[p.id];show('test');
-  let per=old?old.period:'week',plan=(pre||old?.plan||[{tier:p.tier,n:1}]).map(x=>({...x}));
+  let pm=old&&old.pmode?old.pmode:'half',per=old?old.period:'week',plan=(pre||old?.plan||[{tier:p.tier,n:1}]).map(x=>({...x}));
   if(pre&&pre.per)per=pre.per;
   if(!Array.isArray(plan)||!plan.length)plan=[{tier:p.tier,n:1}];
   const render=()=>{
@@ -785,13 +797,16 @@ function goalForm(pre){
          ${plan.length>1?`<button class="link gDel" data-i="${i}">消す</button>`:''}</div>`).join('')}
        <button class="ghost" id="gAdd">＋ 別の年代のメニューを足す</button></div>
       <div class="gsum"><span>1日 ${fmtP(perDay)} ポイント × ${days}日</span><b>目標 ${fmtP(target)} ポイント</b></div>
+      <div class="row"><label id="l-pm">1日サボったときのマイナス</label><div class="seg" role="group" aria-labelledby="l-pm" id="gPm"><button data-v="none">なし</button><button data-v="half">−${fmtP(perDay/2)}（半日分）</button><button data-v="full">−${fmtP(perDay)}（1日分）</button></div>
+       <p class="hint">1回も運動しなかった日は、次の日にこのポイントが引かれます。</p></div>
       <p class="hint">ポイントは「①＋② 両方・ふつう」でやったときの数字です。①か②だけなら半分、「かるめ」は0.6倍、「しっかり」は1.4倍になります。</p>
       <p class="hint">若い年代のメニューほどきついので、ポイントが高くなります。たとえば「毎日60代メニュー5回」と「毎日60代2回＋40代1回」は、どちらも1日10ポイントです。</p>
      </div>
      <button class="big" id="gSave">この目標ではじめる</button>
      <button class="ghost" id="gBack">もどる</button>
      ${old?'<button class="link" id="gStop">いまの目標をやめる</button>':''}`);
-    press($('gPer'),per);
+    press($('gPer'),per);press($('gPm'),pm);
+    $('gPm').querySelectorAll('button').forEach(b=>b.onclick=()=>{pm=b.dataset.v;render()});
     $('gPer').querySelectorAll('button').forEach(b=>b.onclick=()=>{per=b.dataset.v;render()});
     document.querySelectorAll('.gTier').forEach(el=>el.onchange=()=>{plan[+el.dataset.i].tier=el.value;render()});
     document.querySelectorAll('.gM').forEach(b=>b.onclick=()=>{const x=plan[+b.dataset.i];x.n=Math.max(1,x.n-1);render()});
@@ -803,7 +818,7 @@ function goalForm(pre){
       if($('gStop').dataset.armed){delete goals[p.id];saveG();paint();show('home')}
       else{$('gStop').dataset.armed='1';$('gStop').textContent='もう一度押すと、いまの目標をやめます'}};
     $('gSave').onclick=()=>{
-      const s=new Date();goals[p.id]={period:per,start:dkey(s),end:dkey(addD(s,days-1)),days,target,plan};saveG();
+      const s=new Date();goals[p.id]={period:per,start:dkey(s),end:dkey(addD(s,days-1)),days,target,plan,pmode:pm,penalty:pm==='none'?0:pm==='full'?perDay:perDay/2};saveG();
       say(`目標を立てました。${days}日で${fmtP(target)}ポイントです。がんばりましょう。`);paint();show('home');
     };
   };
@@ -836,11 +851,12 @@ function evalGoal(p,prev,now){
   if(scale!==1){const want=g.plan.reduce((a,x)=>a+W[x.tier]*x.n,0)*scale;let cur=nextPlan.reduce((a,x)=>a+W[x.tier]*x.n,0);
     if(scale>1){nextPlan[0].n++}else{for(const x of nextPlan){while(x.n>1&&cur-W[x.tier]>=want){x.n--;cur-=W[x.tier]}}}}
   nextPlan.per=g.period;
-  (ghist[p.id]||(ghist[p.id]=[])).push({start:g.start,end:g.end,target:g.target,earned:st.e,ach,fitBefore:prev?prev.fit:null,fitAfter:now.fit});
+  (ghist[p.id]||(ghist[p.id]=[])).push({start:g.start,end:g.end,target:g.target,earned:st.e,missed:st.miss,ach,fitBefore:prev?prev.fit:null,fitAfter:now.fit});
   delete goals[p.id];saveG();
   return {say:head,nextPlan,html:`<div class="panel"><h2>目標の評価（${fmtD(g.start)}〜${fmtD(g.end)}）</h2>
     <div class="gnum"><b>${Math.round(ach*100)}%</b>　${fmtP(st.e)} / ${fmtP(g.target)} ポイント</div>
-    <div class="gbar"><i style="width:${Math.min(100,ach*100)}%"></i></div>
+    ${st.miss&&st.pen>0?`<p class="hint">運動でたまった ${fmtP(st.raw)} ポイント − サボった ${st.miss}日分 ${fmtP(st.minus)} ポイント</p>`:'<p class="hint">サボった日は1日もありませんでした！</p>'}
+    <div class="gbar"><i style="width:${Math.max(0,Math.min(100,ach*100))}%"></i></div>
     <p class="msg" style="font-family:var(--f-display);font-weight:700;font-size:1.25rem">${head}</p><p>${body}</p></div>`};
 }
 $('goalBtn').onclick=()=>goalForm();
