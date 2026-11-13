@@ -139,6 +139,40 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
 .cmp .up{color:var(--accent);font-weight:700}
 .cmp .dn{color:var(--warm);font-weight:700}
 .pts{font-weight:700;color:var(--accent)}
+.gtag{margin-left:6px;font-size:.75rem;font-weight:700;padding:1px 6px;border-radius:8px;border:1px solid currentColor;opacity:.8}
+.who .links{display:flex;gap:16px;flex-wrap:wrap}
+.board{display:flex;flex-direction:column;gap:6px}
+.brow{display:grid;grid-template-columns:1.6em minmax(0,7em) 1fr auto;gap:10px;align-items:center;width:100%;min-height:52px;padding:6px 10px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.brow.me{border-color:var(--accent);border-width:2px}
+.brow .rk{font:900 1.1rem var(--f-display);color:var(--muted);text-align:center}
+.brow .nm{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brow .bt{height:12px;border-radius:6px;background:var(--track);overflow:hidden}
+.brow .bt i{display:block;height:100%;background:var(--warm);border-radius:6px}
+.brow .pv{text-align:right;line-height:1.2;font-variant-numeric:tabular-nums}
+.brow .pv b{font:900 1.4rem var(--f-display);display:block}
+.brow .pv small{color:var(--muted);font-size:.78rem}
+.brow:focus-visible{outline:3px solid var(--warm);outline-offset:2px}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.tile span{color:var(--muted);font-size:.9rem}
+.tile b{font:900 2rem var(--f-display);font-variant-numeric:tabular-nums}
+.tile small{font-size:.9rem;margin-left:2px}
+.chartbox{overflow-x:auto}
+.chart{width:100%;min-width:320px;height:auto;display:block}
+.chart .ax{stroke:var(--muted);stroke-width:1.5}
+.chart .grid{stroke:var(--line);stroke-width:1.5;stroke-dasharray:6 5}
+.chart .pace{stroke:var(--warm);stroke-width:2;stroke-dasharray:8 6;fill:none}
+.chart .ln{stroke:var(--accent);stroke-width:3.5;fill:none;stroke-linejoin:round;stroke-linecap:round}
+.chart .area{fill:var(--accent);opacity:.14}
+.chart .dot{fill:var(--accent);stroke:var(--surface);stroke-width:3}
+.chart .tl{fill:var(--muted);font:14px var(--f-body)}
+.chart .warmt{fill:var(--warm);font-weight:700}
+.chart .tv{fill:var(--ink);font:700 16px var(--f-display)}
+.chart .bar{fill:var(--accent)}
+.chart .bar2{fill:var(--warm);opacity:.75}
+.lk{display:inline-block;width:18px;height:0;vertical-align:middle;margin-right:6px}
+.ln-k{border-top:3.5px solid var(--accent)}
+.pace-k{border-top:2px dashed var(--warm)}
 .tx{min-height:56px;font:1.05rem var(--f-body);padding:0 14px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink);width:100%;box-sizing:border-box;min-width:0}
 .tx:focus-visible{outline:3px solid var(--warm);outline-offset:2px}
 .guide-d summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:44px}
@@ -168,11 +202,18 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
     <p class="sync on" id="syncLine" role="status">記録はこの端末に保存しています。電波がなくても使えます。</p>
   </header>
 
+  <section class="panel" aria-label="獲得ポイント">
+    <div class="cal-head"><h2 id="sbTitle">今月のポイント</h2><span class="hint">名前を押すとプロフィール</span></div>
+    <div class="board" id="board"></div>
+  </section>
+
   <section class="panel" aria-label="だれがやりますか">
     <h2>だれがやりますか</h2>
     <div class="people" id="people"></div>
-    <div class="who"><span>メニュー：<span class="tier" id="whoTier"></span></span><button class="link" id="editBtn">名前・年代を変える</button></div>
+    <div class="who"><span>メニュー：<span class="tier" id="whoTier"></span></span><span class="links"><button class="link" id="profBtn">プロフィール</button><button class="link" id="editBtn">名前・年代を変える</button></span></div>
     <div class="form" id="form" hidden>
+      <div class="row"><label id="l-kind">種類</label>
+        <div class="seg" role="group" aria-labelledby="l-kind" id="kindSeg"><button data-v="family">家族</button><button data-v="guest">ゲスト</button></div></div>
       <div class="row"><label for="pName">名前</label><input id="pName" maxlength="12" placeholder="例：おじいちゃん"></div>
       <div class="row"><label for="pAge">年齢（体力測定に使います）</label><input id="pAge" type="number" inputmode="numeric" min="10" max="100" placeholder="例：68"></div>
       <div class="row"><label id="l-sex">性別（体力測定に使います）</label>
@@ -202,6 +243,7 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
     <div class="row"><label id="l-level">強さ</label>
       <div class="seg" role="group" aria-labelledby="l-level" data-key="level">
         <button id="lv-l" data-v="light">かるめ</button><button id="lv-n" data-v="normal">ふつう</button><button id="lv-h" data-v="hard">しっかり</button></div></div>
+    <div class="row" id="withRow"><label id="l-with">一緒にやる人（えらんだ人にも同じポイントが入ります）</label><div class="people" id="withBox" role="group" aria-labelledby="l-with"></div></div>
     <p class="lead" id="total"></p>
     <p class="nowtip" id="nowTip"></p>
     <button class="big" id="startBtn">はじめる</button>
@@ -313,7 +355,7 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
 <script>
 (function(){
 const $=id=>document.getElementById(id);
-var SYNCKEYS=['kt-people','kt-recs','kt-tests','kt-logs','kt-goals','kt-goalhist','kt-dels'],syncTimer=null,syncApplying=false;
+var SYNCKEYS=['kt-people','kt-recs','kt-tests','kt-logs','kt-goals','kt-goalhist','kt-dels','kt-gdel'],syncTimer=null,syncApplying=false;
 function queueSync(){if(syncApplying)return;try{localStorage.setItem('kt-dirty','1');localStorage.setItem('kt-mtime',String(Date.now()))}catch(e){}clearTimeout(syncTimer);syncTimer=setTimeout(()=>gsSync(),2000)}
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
              set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}if(SYNCKEYS.indexOf(k)>=0)queueSync()}};
@@ -325,7 +367,12 @@ if(!people){people=[{id:'p1',name:'わたし',tier:'60',menu:'both',level:'norma
 recs=recs||{};
 let curId=store.get('kt-cur',people[0].id);
 const cur=()=>people.find(p=>p.id===curId)||people[0];
-const savePeople=()=>{store.set('kt-people',people);store.set('kt-cur',curId)};
+const PF=['name','age','sex','tier','kind','menu','level'];
+const pkey=q=>{const o={};PF.forEach(f=>o[f]=q[f]??null);return o};
+let pSnap=new Map(people.map(q=>[q.id,pkey(q)]));
+/* 変更した項目にだけ変更時刻を付ける（q.uf）。同期のとき、項目ごとに新しい方を使う */
+const savePeople=()=>{const now=Date.now();people.forEach(q=>{const k=pkey(q),o=pSnap.get(q.id);
+  PF.forEach(f=>{if(!o||o[f]!==k[f]){q.uf=q.uf||{};q.uf[f]=now}});pSnap.set(q.id,k)});store.set('kt-people',people);store.set('kt-cur',curId)};
 const TIERNAME={'10':'10代','20':'20代','30':'30代','40':'40代','50':'50代','60':'60代','70':'70代〜'};
 
 /* ---- voice ---- */
@@ -514,12 +561,19 @@ function paint(){
   const p=cur();
   const box=$('people');box.innerHTML='';
   people.forEach(q=>{const b=document.createElement('button');b.textContent=q.name;b.setAttribute('aria-pressed',String(q.id===p.id));
-    b.onclick=()=>{curId=q.id;savePeople();closeForm();paint()};box.appendChild(b)});
-  const add=document.createElement('button');add.className='add';add.textContent='＋ 家族を追加';add.onclick=()=>openForm(true);box.appendChild(add);
+    if(q.kind==='guest'){const t=document.createElement('small');t.className='gtag';t.textContent='ゲスト';b.appendChild(t)}
+    b.onclick=()=>{curId=q.id;withIds.delete(q.id);savePeople();closeForm();paint()};box.appendChild(b)});
+  const add=document.createElement('button');add.className='add';add.textContent='＋ 家族・ゲストを追加';add.onclick=()=>openForm(true);box.appendChild(add);
+  const wb=$('withBox');wb.innerHTML='';const others=people.filter(q=>q.id!==p.id);
+  $('withRow').hidden=!others.length;
+  others.forEach(q=>{const b=document.createElement('button');b.textContent=q.name;b.setAttribute('aria-pressed',String(withIds.has(q.id)));
+    b.onclick=()=>{withIds.has(q.id)?withIds.delete(q.id):withIds.add(q.id);paint()};wb.appendChild(b)});
+  board();
   $('whoTier').textContent=TIERNAME[p.tier];
   document.querySelectorAll('.seg[data-key]').forEach(g=>press(g,p[g.dataset.key]));
   const secs=steps().reduce((a,s)=>a+s.dur,0);
-  $('total').innerHTML=`${esc(p.name)}さん・${TIERNAME[p.tier]}メニュー　所要時間 およそ ${Math.max(1,Math.round(secs/60))} 分　<span class="pts">1回 ${fmtP(ptsOf(p.tier,p.menu,p.level))} ポイント</span>`;
+  const grp=people.filter(q=>withIds.has(q.id));
+  $('total').innerHTML=`${grp.length?`<b>みんなで ${grp.length+1}人</b>（${[p,...grp].map(q=>esc(q.name)).join('・')}）`:esc(p.name)+'さん'}・${TIERNAME[p.tier]}メニュー　所要時間 およそ ${Math.max(1,Math.round(secs/60))} 分　<span class="pts">1回 ${fmtP(ptsOf(p.tier,p.menu,p.level))} ポイント</span>`;
   const ex=$('exList');ex.innerHTML='';
   blocks(p).forEach(b=>{
     const h=document.createElement('h2');h.textContent=(b==='base'?'① ':'② ')+CAT[b];ex.appendChild(h);
@@ -533,12 +587,15 @@ function paint(){
   });
   calendar();fitPanel();goalPanel();guidePanel();
 }
-let formNew=false,formTier='60',formSex='',delArmed=false;
+let formNew=false,formTier='60',formSex='',formKind='family',delArmed=false;
+const withIds=new Set();
+$('kindSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{formKind=b.dataset.v;press($('kindSeg'),formKind)});
 $('sexSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{formSex=b.dataset.v;press($('sexSeg'),formSex)});
 function openForm(isNew){
   formNew=isNew;const p=cur();
   $('pName').value=isNew?'':p.name;formTier=isNew?'40':p.tier;press($('tierSeg'),formTier);
   $('pAge').value=isNew?'':(p.age||'');formSex=isNew?'':(p.sex||'');press($('sexSeg'),formSex);
+  formKind=isNew?'family':(p.kind||'family');press($('kindSeg'),formKind);
   $('delBtn').hidden=isNew||people.length<2;delArmed=false;$('delBtn').textContent='この人を削除';
   $('form').hidden=false;$('pName').focus();
 }
@@ -549,8 +606,8 @@ $('cancelBtn').onclick=closeForm;
 $('saveBtn').onclick=()=>{
   const name=$('pName').value.trim()||'なまえ';
   const age=parseInt($('pAge').value,10)||null;
-  if(formNew){const id='p'+Date.now();people.push({id,name,tier:formTier,menu:'both',level:'normal',age,sex:formSex||null});curId=id}
-  else{const p=cur();p.name=name;p.tier=formTier;p.age=age;p.sex=formSex||null}
+  if(formNew){const id='p'+Date.now();people.push({id,name,tier:formTier,menu:'both',level:'normal',age,sex:formSex||null,kind:formKind});curId=id}
+  else{const p=cur();p.name=name;p.tier=formTier;p.age=age;p.sex=formSex||null;p.kind=formKind}
   savePeople();closeForm();paint();
 };
 $('delBtn').onclick=()=>{
@@ -611,15 +668,21 @@ function stop(){clearInterval(timer);speechSynthesis&&speechSynthesis.cancel();u
 const dkey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 function finish(){
   clearInterval(timer);unwake();
-  const p=cur(),key=dkey(new Date());
-  const days=recs[p.id]||(recs[p.id]=[]);if(!days.includes(key)){days.push(key);store.set('kt-recs',recs)}
-  const pt=ptsOf(p.tier,p.menu,p.level);
-  (logs[p.id]||(logs[p.id]=[])).push({d:key,tier:p.tier,menu:p.menu,level:p.level,pts:pt,t:Date.now()});saveG();
-  const st=goalState(p.id);
-  let gl='';if(st&&!st.over){const rest=Math.max(0,st.g.target-st.e);gl=rest>0?`目標まで あと ${fmtP(rest)} ポイントです。`:'目標ポイントを達成しました！'}
-  say(`${p.name}さん、おつかれさまでした。${fmtP(pt)}ポイント獲得です。${gl}`);
-  $('finTitle').textContent=`${p.name}さん、おつかれさまでした`;
-  $('finText').textContent=`${TIERNAME[p.tier]}の${blocks(p).map(b=>CAT[b]).join('と')}ができました。＋${fmtP(pt)} ポイント。${gl}`;
+  const p=cur(),key=dkey(new Date()),pt=ptsOf(p.tier,p.menu,p.level),now=Date.now();
+  const crew=[p,...people.filter(q=>withIds.has(q.id)&&q.id!==p.id)];
+  const lines=[];
+  crew.forEach((q,i)=>{
+    const days=recs[q.id]||(recs[q.id]=[]);if(!days.includes(key))days.push(key);
+    (logs[q.id]||(logs[q.id]=[])).push({d:key,tier:p.tier,menu:p.menu,level:p.level,pts:pt,t:now+i});
+  });
+  store.set('kt-recs',recs);saveG();
+  crew.forEach(q=>{const st=goalState(q.id);let gl='';
+    if(st&&!st.over){const rest=Math.max(0,st.g.target-st.e);gl=rest>0?`目標まで あと ${fmtP(rest)}`:'目標達成！'}
+    lines.push(`${q.name}さん ＋${fmtP(pt)}${gl?`（${gl}）`:''}`)});
+  const names=crew.map(q=>q.name+'さん').join('、');
+  say(`${names}、おつかれさまでした。${crew.length>1?'それぞれ':''}${fmtP(pt)}ポイント獲得です。`);
+  $('finTitle').textContent=`${names}、おつかれさまでした`;
+  $('finText').textContent=`${TIERNAME[p.tier]}の${blocks(p).map(b=>CAT[b]).join('と')}ができました。　`+lines.join('　');
   paint();show('fin');
 }
 
@@ -870,10 +933,10 @@ function goalForm(pre){
     $('gAdd').onclick=()=>{plan.push({tier:p.tier,n:1});render()};
     $('gBack').onclick=()=>{paint();show('home')};
     if($('gStop'))$('gStop').onclick=()=>{
-      if($('gStop').dataset.armed){delete goals[p.id];saveG();paint();show('home')}
+      if($('gStop').dataset.armed){delGoal(p.id);saveG();paint();show('home')}
       else{$('gStop').dataset.armed='1';$('gStop').textContent='もう一度押すと、いまの目標をやめます'}};
     $('gSave').onclick=()=>{
-      const s=new Date();goals[p.id]={period:per,start:dkey(s),end:dkey(addD(s,days-1)),days,target,plan,pmode:pm,penalty:pm==='none'?0:pm==='full'?perDay:perDay/2};saveG();
+      const s=new Date();goals[p.id]={u:Date.now(),period:per,start:dkey(s),end:dkey(addD(s,days-1)),days,target,plan,pmode:pm,penalty:pm==='none'?0:pm==='full'?perDay:perDay/2};saveG();
       say(`目標を立てました。${days}日で${fmtP(target)}ポイントです。がんばりましょう。`);paint();show('home');
     };
   };
@@ -907,7 +970,7 @@ function evalGoal(p,prev,now){
     if(scale>1){nextPlan[0].n++}else{for(const x of nextPlan){while(x.n>1&&cur-W[x.tier]>=want){x.n--;cur-=W[x.tier]}}}}
   nextPlan.per=g.period;
   (ghist[p.id]||(ghist[p.id]=[])).push({start:g.start,end:g.end,target:g.target,earned:st.e,missed:st.miss,ach,fitBefore:prev?prev.fit:null,fitAfter:now.fit});
-  delete goals[p.id];saveG();
+  delGoal(p.id);saveG();
   return {say:head,nextPlan,html:`<div class="panel"><h2>目標の評価（${fmtD(g.start)}〜${fmtD(g.end)}）</h2>
     <div class="gnum"><b>${Math.round(ach*100)}%</b>　${fmtP(st.e)} / ${fmtP(g.target)} ポイント</div>
     ${st.miss&&st.pen>0?`<p class="hint">運動でたまった ${fmtP(st.raw)} ポイント − サボった ${st.miss}日分 ${fmtP(st.minus)} ポイント</p>`:'<p class="hint">サボった日は1日もありませんでした！</p>'}
@@ -931,6 +994,93 @@ function guidePanel(){
 }
 try{if(localStorage.getItem('kt-guide-open')==='1')$('guideBox').open=true}catch(e){}
 $('guideBox').addEventListener('toggle',()=>{try{localStorage.setItem('kt-guide-open',$('guideBox').open?'1':'0')}catch(e){}});
+/* ---- points board & profile ---- */
+const monthPre=()=>{const n=new Date();return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-`};
+const sumPts=(pid,pre)=>(logs[pid]||[]).filter(l=>!pre||l.d.startsWith(pre)).reduce((a,l)=>a+l.pts,0);
+function board(){
+  const pre=monthPre(),box=$('board');$('sbTitle').textContent=`${new Date().getMonth()+1}月のポイント`;
+  const rows=people.map(q=>({q,m:sumPts(q.id,pre),all:sumPts(q.id)})).sort((x,y)=>y.m-x.m||y.all-x.all);
+  const max=Math.max(1,...rows.map(r=>r.m));box.innerHTML='';
+  rows.forEach((r,i)=>{
+    const b=document.createElement('button');b.className='brow'+(r.q.id===curId?' me':'');
+    b.setAttribute('aria-label',`${r.q.name}さん 今月 ${fmtP(r.m)}ポイント、累計 ${fmtP(r.all)}ポイント。プロフィールを開く`);
+    b.innerHTML=`<span class="rk">${i+1}</span><span class="nm"></span><span class="bt"><i style="width:${r.m/max*100}%"></i></span><span class="pv"><b>${fmtP(r.m)}</b><small>累計 ${fmtP(r.all)}</small></span>`;
+    const nm=b.querySelector('.nm');nm.textContent=r.q.name;if(r.q.kind==='guest'){const t=document.createElement('small');t.className='gtag';t.textContent='ゲスト';nm.appendChild(t)}
+    b.onclick=()=>profile(r.q.id);box.appendChild(b);
+  });
+}
+function svgGoal(pid,g){
+  const today=dkey(new Date()),pen=penOf(g),done=new Set((logs[pid]||[]).map(l=>l.d));
+  const pts=[];let cum=0,minC=0,maxC=0;
+  for(let d=kd(g.start),i=0;dkey(d)<=g.end&&dkey(d)<=today;d=addD(d,1),i++){
+    const k=dkey(d);cum+=(logs[pid]||[]).filter(l=>l.d===k).reduce((a,l)=>a+l.pts,0);
+    if(k<today&&!done.has(k))cum-=pen;pts.push([i,cum]);minC=Math.min(minC,cum);maxC=Math.max(maxC,cum);
+  }
+  const W=600,H=260,L=48,R=70,T=20,B=34,n=g.days-1||1,top=Math.max(g.target,maxC)*1.08,bot=Math.min(0,minC);
+  const x=i=>L+(W-L-R)*i/n,y=v=>T+(H-T-B)*(top-v)/((top-bot)||1);
+  const line=pts.map(([i,v],k)=>`${k?'L':'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
+  const area=pts.length?`M${x(0)},${y(0)}${pts.map(([i,v])=>`L${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('')}L${x(pts[pts.length-1][0]).toFixed(1)},${y(0)}Z`:'';
+  const last=pts[pts.length-1]||[0,0];
+  return `<svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="目標期間のポイントの推移。目標 ${fmtP(g.target)}、現在 ${fmtP(last[1])}">
+   <line x1="${L}" x2="${W-R}" y1="${y(0)}" y2="${y(0)}" class="ax"/>
+   <line x1="${L}" x2="${W-R}" y1="${y(g.target)}" y2="${y(g.target)}" class="grid"/>
+   <text x="${L-6}" y="${y(0)+4}" class="tl" text-anchor="end">0</text>
+   <text x="${L-6}" y="${y(g.target)+4}" class="tl" text-anchor="end">${fmtP(g.target)}</text>
+   <line x1="${x(0)}" y1="${y(0)}" x2="${x(n)}" y2="${y(g.target)}" class="pace"/>
+   <text x="${x(n)+6}" y="${y(g.target)+4}" class="tl warmt">目標</text>
+   ${area?`<path d="${area}" class="area"/>`:''}<path d="${line}" class="ln"/>
+   <circle cx="${x(last[0])}" cy="${y(last[1])}" r="6" class="dot"/>
+   <text x="${x(last[0])+10}" y="${y(last[1])-8}" class="tv">${fmtP(last[1])}</text>
+   <text x="${L}" y="${H-10}" class="tl">${fmtD(g.start)}</text>
+   <text x="${W-R}" y="${H-10}" class="tl" text-anchor="end">${fmtD(g.end)}</text>
+  </svg>`;
+}
+function svgHist(list){
+  const items=list.slice(-6),W=600,H=220,L=40,R=16,T=24,B=40,top=Math.max(120,...items.map(h=>h.ach*100))*1.05;
+  const bw=(W-L-R)/items.length,y=v=>T+(H-T-B)*(top-v)/top;
+  return `<svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="これまでの目標の達成率">
+   <line x1="${L}" x2="${W-R}" y1="${y(0)}" y2="${y(0)}" class="ax"/>
+   <line x1="${L}" x2="${W-R}" y1="${y(100)}" y2="${y(100)}" class="grid"/>
+   <text x="${L-6}" y="${y(100)+4}" class="tl" text-anchor="end">100%</text>
+   ${items.map((h,i)=>{const v=Math.max(0,h.ach*100),cx=L+bw*i+bw/2,w=Math.min(64,bw*.6);
+     return `<rect x="${cx-w/2}" y="${y(v)}" width="${w}" height="${y(0)-y(v)}" rx="4" class="${h.ach>=1?'bar':'bar2'}"/>
+     <text x="${cx}" y="${y(v)-6}" class="tv" text-anchor="middle">${Math.round(h.ach*100)}%</text>
+     <text x="${cx}" y="${H-14}" class="tl" text-anchor="middle">${fmtD(h.start).replace('月','/').replace('日','')}〜</text>`}).join('')}
+  </svg>`;
+}
+function profile(pid){
+  const q=people.find(x=>x.id===pid);if(!q)return;show('test');
+  const pre=monthPre(),m=sumPts(pid,pre),all=sumPts(pid),days=(recs[pid]||[]).filter(d=>d.startsWith(pre)).length;
+  const tl=tests[pid]||[],last=tl[tl.length-1],st=goalState(pid),gh=ghist[pid]||[];
+  const info=[q.kind==='guest'?'ゲスト':'家族',q.age?`${q.age}歳`:null,q.sex?(q.sex==='m'?'男性':'女性'):null,`${TIERNAME[q.tier]}メニュー`].filter(Boolean).join('・');
+  tSet('プロフィール',`${esc(q.name)}さん`,`
+   <p class="lead">${info}</p>
+   <div class="tiles">
+    <div class="tile"><span>今月のポイント</span><b>${fmtP(m)}</b></div>
+    <div class="tile"><span>累計ポイント</span><b>${fmtP(all)}</b></div>
+    <div class="tile"><span>今月の運動日数</span><b>${days}<small>日</small></b></div>
+    <div class="tile"><span>体力年齢</span><b>${last?decade(last.fit)+'<small>歳代</small>':'－'}</b></div>
+   </div>
+   <div class="panel"><h2>いまの目標</h2>
+    ${st?`<div class="gnum"><b class="${st.e<0?'neg':''}">${Math.floor(st.e/st.g.target*100)}%</b>　${fmtP(st.e)} / ${fmtP(st.g.target)} ポイント</div>
+      <p class="hint">${fmtD(st.g.start)}〜${fmtD(st.g.end)}　${planText(st.g.plan)}${st.miss?`　サボった日 ${st.miss}日（−${fmtP(st.minus)}）`:''}</p>
+      <div class="chartbox">${svgGoal(pid,st.g)}</div>
+      <div class="glegend"><span><span class="lk ln-k"></span>たまったポイント（サボりを引いた数）</span><span><span class="lk pace-k"></span>予定どおりのペース</span></div>`
+     :'<p class="lead">いまは目標を立てていません。</p>'}
+   </div>
+   <div class="panel"><h2>これまでの目標の達成率</h2>
+    ${gh.length?`<div class="chartbox">${svgHist(gh)}</div><p class="hint">100%以上が達成（緑）。直近6回まで表示します。</p>`:'<p class="lead">まだ終わった目標はありません。</p>'}
+   </div>
+   ${tl.length?`<div class="panel"><h2>体力測定の記録</h2><div class="hist">${tl.slice(-5).reverse().map(r=>`<span>${fmtD(r.d)}　<b>${decade(r.fit)}歳代</b>　椅子立ち上がり ${r.cs??'－'}回／上体起こし ${r.su??'－'}回</span>`).join('')}</div></div>`:''}
+   <button class="big" id="pfUse">${esc(q.name)}さんで運動する</button>
+   <button class="ghost" id="pfEdit">名前・年代を変える</button>
+   <button class="ghost" id="pfBack">もどる</button>`);
+  $('pfUse').onclick=()=>{curId=pid;withIds.delete(pid);savePeople();paint();show('home')};
+  $('pfEdit').onclick=()=>{curId=pid;savePeople();paint();show('home');openForm(false);$('form').scrollIntoView({block:'center'})};
+  $('pfBack').onclick=()=>{paint();show('home')};
+}
+$('profBtn').onclick=()=>profile(cur().id);
+
 $('fitBtn').onclick=fitIntro;
 
 /* ---- sync across devices (Google Apps Script 保管庫) ----
@@ -938,7 +1088,8 @@ $('fitBtn').onclick=fitIntro;
    2台で別々に記録しても消えないよう、運動記録・測定・カレンダーは「両方を合わせる」。
    人の登録内容と目標は、あとで変更した端末のほうを使う。 */
 var pendingRemote=null,syncRev=0,gsBusy=false,gsAgain=false,gsLast=null;
-var dels=store.get('kt-dels',[]);
+var dels=store.get('kt-dels',[]),gdel=store.get('kt-gdel',{});
+function delGoal(pid){delete goals[pid];gdel[pid]=Date.now();store.set('kt-gdel',gdel)}
 function syncMsg(t,cls){const e=$('syncLine');e.textContent=t;e.className='sync'+(cls?' '+cls:'')}
 const hhmm=d=>`${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:v}catch(e){return d}};
@@ -946,14 +1097,14 @@ const lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
 function gsCfg(){const url=lsGet('kt-gs-url',''),key=lsGet('kt-gs-key','');return url&&key?{url,key}:null}
 function packState(){
   const L={};for(const k in logs)L[k]=logs[k].map(l=>(l.t?[l.d,l.tier,l.menu,l.level,l.pts,l.t]:[l.d,l.tier,l.menu,l.level,l.pts]).join('|'));
-  return {v:2,mt:+lsGet('kt-mtime',0)||0,people,recs,tests,logs:L,goals,ghist,dels};
+  return {v:3,mt:+lsGet('kt-mtime',0)||0,people,recs,tests,logs:L,goals,ghist,dels,gdel};
 }
 function applyState(d){
   syncApplying=true;
   people=Array.isArray(d.people)&&d.people.length?d.people:people;
-  recs=d.recs||{};tests=d.tests||{};goals=d.goals||{};ghist=d.ghist||{};dels=d.dels||[];
+  recs=d.recs||{};tests=d.tests||{};goals=d.goals||{};ghist=d.ghist||{};dels=d.dels||[];gdel=d.gdel||{};pSnap=new Map(people.map(q=>[q.id,pkey(q)]));
   logs={};const L=d.logs||{};for(const k in L)logs[k]=L[k].map(x=>{const a=String(x).split('|');const o={d:a[0],tier:a[1],menu:a[2],level:a[3],pts:+a[4]};if(a[5])o.t=+a[5];return o});
-  try{for(const [k,v] of [['kt-people',people],['kt-recs',recs],['kt-tests',tests],['kt-logs',logs],['kt-goals',goals],['kt-goalhist',ghist],['kt-dels',dels]])localStorage.setItem(k,JSON.stringify(v))}catch(e){}
+  try{for(const [k,v] of [['kt-people',people],['kt-recs',recs],['kt-tests',tests],['kt-logs',logs],['kt-goals',goals],['kt-goalhist',ghist],['kt-dels',dels],['kt-gdel',gdel]])localStorage.setItem(k,JSON.stringify(v))}catch(e){}
   if(d.mt)lsSet('kt-mtime',String(d.mt));
   syncApplying=false;
   if(!people.find(q=>q.id===curId))curId=people[0].id;
@@ -962,15 +1113,29 @@ function applyState(d){
 function mergeDocs(a,b){
   const newer=(b.mt||0)>(a.mt||0)?b:a,older=newer===a?b:a;
   const dl=new Set([...(a.dels||[]),...(b.dels||[])]);
-  const pm=new Map();(older.people||[]).forEach(q=>pm.set(q.id,q));(newer.people||[]).forEach(q=>pm.set(q.id,q));
+  /* 人：項目ごとに変更時刻の新しい方。時刻がない（古い記録）なら新しい端末の方 */
+  const om=new Map((older.people||[]).map(q=>[q.id,q])),nm=new Map((newer.people||[]).map(q=>[q.id,q])),pm=new Map();
+  new Set([...om.keys(),...nm.keys()]).forEach(id=>{const x=om.get(id),y=nm.get(id);
+    if(!x||!y){pm.set(id,x||y);return}
+    const r={...y},uf={};
+    PF.forEach(f=>{const tx=(x.uf||{})[f]||0,ty=(y.uf||{})[f]||0;if(tx>ty){if(x[f]===undefined)delete r[f];else r[f]=x[f]}const t=Math.max(tx,ty);if(t)uf[f]=t});
+    delete r.u;if(Object.keys(uf).length)r.uf=uf;else delete r.uf;pm.set(id,r)});
   let ids=[...new Set([...(newer.people||[]).map(q=>q.id),...(older.people||[]).map(q=>q.id)])].filter(id=>!dl.has(id));
   const people=ids.length?ids.map(id=>pm.get(id)):(newer.people||[]);
   const multi=(xa,xb)=>{const ca=new Map(),cb=new Map(),f=(arr,m)=>(arr||[]).forEach(x=>{const k=typeof x==='string'?x:JSON.stringify(x);m.set(k,(m.get(k)||0)+1)});
     f(xa,ca);f(xb,cb);const out=[];new Set([...ca.keys(),...cb.keys()]).forEach(k=>{const n=Math.max(ca.get(k)||0,cb.get(k)||0);for(let i=0;i<n;i++)out.push(k)});
     return out.sort().map(k=>k[0]==='{'?JSON.parse(k):k)};
   const per=f=>{const o={};new Set([...Object.keys(a[f]||{}),...Object.keys(b[f]||{})]).forEach(k=>{if(!dl.has(k))o[k]=multi((a[f]||{})[k],(b[f]||{})[k])});return o};
-  const goals={};const ng=newer.goals||{};Object.keys(ng).sort().forEach(k=>{if(!dl.has(k))goals[k]=ng[k]});
-  return {v:2,mt:Math.max(a.mt||0,b.mt||0),people,recs:per('recs'),tests:per('tests'),logs:per('logs'),goals,ghist:per('ghist'),dels:[...dl].sort()};
+  /* 目標：人ごとに、いちばん新しい「立てた／やめた」を使う */
+  const goals={},gdel={};
+  new Set([...Object.keys(a.goals||{}),...Object.keys(b.goals||{}),...Object.keys(a.gdel||{}),...Object.keys(b.gdel||{})]).forEach(k=>{
+    if(dl.has(k))return;
+    const ga=(a.goals||{})[k],gb=(b.goals||{})[k],gn=(newer.goals||{})[k];
+    const best=!ga?gb:!gb?ga:((ga.u||0)!==(gb.u||0)?((ga.u||0)>(gb.u||0)?ga:gb):(gn||ga));
+    const dt=Math.max((a.gdel||{})[k]||0,(b.gdel||{})[k]||0);if(dt)gdel[k]=dt;
+    if(best&&(dt===0||(best.u||0)>dt))goals[k]=best;
+  });
+  return {v:3,mt:Math.max(a.mt||0,b.mt||0),people,recs:per('recs'),tests:per('tests'),logs:per('logs'),goals,ghist:per('ghist'),dels:[...dl].sort(),gdel};
 }
 const canon=x=>{const c=mergeDocs(x,x);delete c.mt;return JSON.stringify(c)};
 function onHome(){return !$('home').hidden}
