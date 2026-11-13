@@ -160,6 +160,10 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
 .kc strong{font:900 1.6rem var(--f-display);color:var(--warm);font-variant-numeric:tabular-nums}
 .kc .treat{font-family:var(--f-display);font-weight:700;color:var(--accent)}
 .chart .bar3{fill:var(--accent);opacity:.55}
+.wrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.wrow .tx{flex:1 1 140px;width:auto}
+.wrow .big{flex:1 1 140px;width:auto;min-height:56px;font-size:1.2rem}
+.upc{color:var(--accent)}.dnc{color:var(--warm)}
 .tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
 .tile span{color:var(--muted);font-size:.9rem}
@@ -366,7 +370,7 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
 <script>
 (function(){
 const $=id=>document.getElementById(id);
-var SYNCKEYS=['kt-people','kt-recs','kt-tests','kt-logs','kt-goals','kt-goalhist','kt-dels','kt-gdel'],syncTimer=null,syncApplying=false;
+var SYNCKEYS=['kt-people','kt-recs','kt-tests','kt-logs','kt-goals','kt-goalhist','kt-dels','kt-gdel','kt-wlog'],syncTimer=null,syncApplying=false;
 function queueSync(){if(syncApplying)return;try{localStorage.setItem('kt-dirty','1');localStorage.setItem('kt-mtime',String(Date.now()))}catch(e){}clearTimeout(syncTimer);syncTimer=setTimeout(()=>gsSync(),2000)}
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
              set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}if(SYNCKEYS.indexOf(k)>=0)queueSync()}};
@@ -585,7 +589,7 @@ function paint(){
   const secs=steps().reduce((a,s)=>a+s.dur,0);
   const grp=people.filter(q=>withIds.has(q.id));
   $('total').innerHTML=`${grp.length?`<b>みんなで ${grp.length+1}人</b>（${[p,...grp].map(q=>esc(q.name)).join('・')}）`:esc(p.name)+'さん'}・${TIERNAME[p.tier]}メニュー　所要時間 およそ ${Math.max(1,Math.round(secs/60))} 分　<span class="pts">1回 ${fmtP(ptsOf(p.tier,p.menu,p.level))} ポイント・約${Math.round(sessKcal(p.tier,p.menu,p.level,p))}kcal</span>`;
-  {const td=dayKcal(p.id,dkey(new Date()));$('kcLine').innerHTML=`今日の${esc(p.name)}さんの消費：<b>約${Math.round(td)}kcal</b>　${esc(treatText(td))}${p.weight?'':`<br><small>体重が未登録のため ${kgOf(p)}kg で計算しています。「名前・年代を変える」で登録できます。</small>`}`}
+  {const td=dayKcal(p.id,dkey(new Date()));$('kcLine').innerHTML=`今日の${esc(p.name)}さんの消費：<b>約${Math.round(td)}kcal</b>　${esc(treatText(td))}${p.weight?'':`<br><small>体重が未登録のため ${kgOf(p)}kg で計算しています。「名前・年代を変える」で登録できます。</small>`}${p.weight&&weightDue(p.id).due?`<br><button class="link" id="wDue">体重を測る日です。記録する</button>`:''}`;if($('wDue'))$('wDue').onclick=()=>{profile(p.id);setTimeout(()=>{const e=$('wPanel');e&&e.scrollIntoView({block:'start'})},50)}}
   const ex=$('exList');ex.innerHTML='';
   blocks(p).forEach(b=>{
     const h=document.createElement('h2');h.textContent=(b==='base'?'① ':'② ')+CAT[b];ex.appendChild(h);
@@ -619,8 +623,8 @@ $('cancelBtn').onclick=closeForm;
 $('saveBtn').onclick=()=>{
   const name=$('pName').value.trim()||'なまえ';
   const age=parseInt($('pAge').value,10)||null,wt=parseFloat($('pWeight').value)||null;
-  if(formNew){const id='p'+Date.now();people.push({id,name,tier:formTier,menu:'both',level:'normal',age,sex:formSex||null,kind:formKind,weight:wt});curId=id}
-  else{const p=cur();p.name=name;p.tier=formTier;p.age=age;p.sex=formSex||null;p.kind=formKind;p.weight=wt}
+  if(formNew){const id='p'+Date.now();people.push({id,name,tier:formTier,menu:'both',level:'normal',age,sex:formSex||null,kind:formKind,weight:wt});curId=id;if(wt)addWeight(id,wt,false)}
+  else{const p=cur();const changed=wt&&wt!==p.weight;p.name=name;p.tier=formTier;p.age=age;p.sex=formSex||null;p.kind=formKind;p.weight=wt;if(changed)addWeight(p.id,wt,false)}
   savePeople();closeForm();paint();
 };
 $('delBtn').onclick=()=>{
@@ -863,7 +867,7 @@ const W={'10':8,'20':10,'30':8,'40':6,'50':4,'60':2,'70':1};
 const ptsOf=(tier,menu,level)=>Math.round(W[tier]*(menu==='both'?1:.5)*LV[level]*10)/10;
 const fmtP=n=>String(Math.round(n*10)/10);
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let logs=store.get('kt-logs',{}),goals=store.get('kt-goals',{}),ghist=store.get('kt-goalhist',{});
+let logs=store.get('kt-logs',{}),goals=store.get('kt-goals',{}),ghist=store.get('kt-goalhist',{}),wlog=store.get('kt-wlog',{});
 function saveG(){store.set('kt-logs',logs);store.set('kt-goals',goals);store.set('kt-goalhist',ghist)}
 const kd=k=>{const [y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d)};
 const addD=(d,n)=>{const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()+n);return x};
@@ -1051,6 +1055,38 @@ function svgKcal(pid){
   </svg>`;
 }
 
+/* ---- weight log ---- */
+function addWeight(pid,kg,setPerson){
+  const q=people.find(x=>x.id===pid);const d=dkey(new Date());
+  (wlog[pid]||(wlog[pid]=[])).push({d,kg:Math.round(kg*10)/10,t:Date.now()});store.set('kt-wlog',wlog);
+  if(setPerson&&q&&q.weight!==kg){q.weight=Math.round(kg*10)/10;savePeople()}
+}
+function weightPoints(pid){const by=new Map();(wlog[pid]||[]).forEach(w=>{const o=by.get(w.d);if(!o||w.t>o.t)by.set(w.d,w)});return [...by.values()].sort((a,b)=>a.d<b.d?-1:1)}
+function weightDue(pid){const w=weightPoints(pid);if(!w.length)return {due:true,days:null};const n=dBetween(w[w.length-1].d,dkey(new Date()));return {due:n>=7,days:n}}
+function weightSummary(pid){
+  const w=weightPoints(pid);if(!w.length)return '<p class="lead">まだ記録がありません。下に今日の体重を入れてください。</p>';
+  const l=w[w.length-1],f=w[0],ch=Math.round((l.kg-f.kg)*10)/10,due=weightDue(pid);
+  return `<div class="gnum"><b>${l.kg}</b> kg　<span class="hint">${fmtD(l.d)}（${due.days===0?'今日':due.days+'日前'}）</span></div>`+
+    (w.length>1?`<p>最初の記録（${fmtD(f.d)}）から <b class="${ch<=0?'upc':'dnc'}">${ch>0?'＋':ch<0?'－':'±'}${Math.abs(ch)}kg</b></p>`:'')+
+    (due.due?'<p class="skip">そろそろ体重を測る日です（前回から7日以上）。</p>':'');
+}
+function svgWeight(pid){
+  const w=weightPoints(pid).slice(-26),W=600,H=260,L=70,R=70,T=30,B=44;
+  const t0=kd(w[0].d).getTime(),t1=Math.max(kd(w[w.length-1].d).getTime(),t0+864e5);
+  const mn=Math.min(...w.map(x=>x.kg)),mx=Math.max(...w.map(x=>x.kg)),pad=Math.max(1,(mx-mn)*.2),lo=Math.floor(mn-pad),hi=Math.ceil(mx+pad);
+  const x=d=>L+(W-L-R)*(kd(d).getTime()-t0)/(t1-t0),y=v=>T+(H-T-B)*(hi-v)/(hi-lo);
+  const line=w.map((p,i)=>`${i?'L':'M'}${x(p.d).toFixed(1)},${y(p.kg).toFixed(1)}`).join('');
+  const l=w[w.length-1],mid=Math.round((lo+hi)/2);
+  return `<svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="体重の推移。${fmtD(w[0].d)} ${w[0].kg}kg から ${fmtD(l.d)} ${l.kg}kg">
+   ${[lo,mid,hi].map(v=>`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" class="${v===lo?'ax':'grid'}"/><text x="${L-8}" y="${y(v)+6}" class="tl" text-anchor="end">${v}kg</text>`).join('')}
+   <path d="${line}" class="ln"/>
+   ${w.map(p=>`<circle cx="${x(p.d)}" cy="${y(p.kg)}" r="${p===l?7:4.5}" class="dot"/>`).join('')}
+   <text x="${x(l.d)+12}" y="${y(l.kg)+7}" class="tv">${l.kg}</text>
+   <text x="${L}" y="${H-12}" class="tl">${fmtD(w[0].d)}</text>
+   <text x="${W-R}" y="${H-12}" class="tl" text-anchor="end">${fmtD(l.d)}</text>
+  </svg>`;
+}
+
 /* ---- points board & profile ---- */
 const monthPre=()=>{const n=new Date();return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-`};
 const sumPts=(pid,pre)=>(logs[pid]||[]).filter(l=>!pre||l.d.startsWith(pre)).reduce((a,l)=>a+l.pts,0);
@@ -1120,6 +1156,12 @@ function profile(pid){
     <div class="tile"><span>今日の消費</span><b>${Math.round(dayKcal(pid,dkey(new Date())))}<small>kcal</small></b></div>
     <div class="tile"><span>今月の消費</span><b>${Math.round(monthKcal(pid))}<small>kcal</small></b></div>
    </div>
+   <div class="panel" id="wPanel"><h2>体重の記録</h2>
+    ${weightSummary(pid)}
+    <div class="wrow"><input id="wIn" class="tx" type="number" inputmode="decimal" min="20" max="200" step="0.1" placeholder="例：71.5" value="" aria-label="今日の体重（kg）"><span>kg</span><button class="big" id="wSave">記録する</button></div>
+    <p class="hint" id="wMsg">週1回、同じ曜日の同じ条件（朝、トイレのあと・朝食前など）で測ると、変化が分かりやすくなります。</p>
+    ${weightPoints(pid).length>=2?`<div class="chartbox">${svgWeight(pid)}</div>`:'<p class="hint">2回以上記録すると、グラフが出ます。</p>'}
+   </div>
    <div class="panel"><h2>1日ごとの消費カロリー（2週間）</h2>
     <div class="chartbox">${svgKcal(pid)}</div>
     <p class="hint">運動で増えた分の消費カロリーです（体重 ${kgOf(q)}kg${q.weight?'':'・未登録のため仮の値'}で計算）。点線はカップアイス1個（約200kcal）の目安。</p>
@@ -1141,6 +1183,9 @@ function profile(pid){
   $('pfUse').onclick=()=>{curId=pid;withIds.delete(pid);savePeople();paint();show('home')};
   $('pfEdit').onclick=()=>{curId=pid;savePeople();paint();show('home');openForm(false);$('form').scrollIntoView({block:'center'})};
   $('pfBack').onclick=()=>{paint();show('home')};
+  $('wSave').onclick=()=>{const v=parseFloat($('wIn').value);
+    if(!(v>=20&&v<=200)){$('wMsg').textContent='体重を数字で入れてください（例：71.5）。';return}
+    addWeight(pid,v,true);say(`${q.name}さんの体重、${v}キロを記録しました。`);profile(pid);setTimeout(()=>{const e=$('wPanel');e&&e.scrollIntoView({block:'start'})},50)};
 }
 $('profBtn').onclick=()=>profile(cur().id);
 
@@ -1160,14 +1205,14 @@ const lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
 function gsCfg(){const url=lsGet('kt-gs-url',''),key=lsGet('kt-gs-key','');return url&&key?{url,key}:null}
 function packState(){
   const L={};for(const k in logs)L[k]=logs[k].map(l=>(l.t?[l.d,l.tier,l.menu,l.level,l.pts,l.t]:[l.d,l.tier,l.menu,l.level,l.pts]).join('|'));
-  return {v:3,mt:+lsGet('kt-mtime',0)||0,people,recs,tests,logs:L,goals,ghist,dels,gdel};
+  return {v:3,mt:+lsGet('kt-mtime',0)||0,people,recs,tests,logs:L,goals,ghist,dels,gdel,wlog};
 }
 function applyState(d){
   syncApplying=true;
   people=Array.isArray(d.people)&&d.people.length?d.people:people;
-  recs=d.recs||{};tests=d.tests||{};goals=d.goals||{};ghist=d.ghist||{};dels=d.dels||[];gdel=d.gdel||{};pSnap=new Map(people.map(q=>[q.id,pkey(q)]));
+  recs=d.recs||{};tests=d.tests||{};goals=d.goals||{};ghist=d.ghist||{};wlog=d.wlog||{};dels=d.dels||[];gdel=d.gdel||{};pSnap=new Map(people.map(q=>[q.id,pkey(q)]));
   logs={};const L=d.logs||{};for(const k in L)logs[k]=L[k].map(x=>{const a=String(x).split('|');const o={d:a[0],tier:a[1],menu:a[2],level:a[3],pts:+a[4]};if(a[5])o.t=+a[5];return o});
-  try{for(const [k,v] of [['kt-people',people],['kt-recs',recs],['kt-tests',tests],['kt-logs',logs],['kt-goals',goals],['kt-goalhist',ghist],['kt-dels',dels],['kt-gdel',gdel]])localStorage.setItem(k,JSON.stringify(v))}catch(e){}
+  try{for(const [k,v] of [['kt-people',people],['kt-recs',recs],['kt-tests',tests],['kt-logs',logs],['kt-goals',goals],['kt-goalhist',ghist],['kt-dels',dels],['kt-gdel',gdel],['kt-wlog',wlog]])localStorage.setItem(k,JSON.stringify(v))}catch(e){}
   if(d.mt)lsSet('kt-mtime',String(d.mt));
   syncApplying=false;
   if(!people.find(q=>q.id===curId))curId=people[0].id;
@@ -1198,7 +1243,7 @@ function mergeDocs(a,b){
     const dt=Math.max((a.gdel||{})[k]||0,(b.gdel||{})[k]||0);if(dt)gdel[k]=dt;
     if(best&&(dt===0||(best.u||0)>dt))goals[k]=best;
   });
-  return {v:3,mt:Math.max(a.mt||0,b.mt||0),people,recs:per('recs'),tests:per('tests'),logs:per('logs'),goals,ghist:per('ghist'),dels:[...dl].sort(),gdel};
+  return {v:3,mt:Math.max(a.mt||0,b.mt||0),people,recs:per('recs'),tests:per('tests'),logs:per('logs'),goals,ghist:per('ghist'),wlog:per('wlog'),dels:[...dl].sort(),gdel};
 }
 const canon=x=>{const c=mergeDocs(x,x);delete c.mt;return JSON.stringify(c)};
 function onHome(){return !$('home').hidden}
