@@ -152,6 +152,14 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
 .brow .pv b{font:900 1.4rem var(--f-display);display:block}
 .brow .pv small{color:var(--muted);font-size:.78rem}
 .brow:focus-visible{outline:3px solid var(--warm);outline-offset:2px}
+.kcline{background:var(--bg);border-radius:12px;padding:10px 14px}
+.kcline b{font-family:var(--f-display);font-size:1.25rem;color:var(--warm)}
+.kcline small{color:var(--muted)}
+.finkcal{display:flex;flex-direction:column;gap:10px;width:100%;text-align:left}
+.kc{display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--line);padding-top:10px}
+.kc strong{font:900 1.6rem var(--f-display);color:var(--warm);font-variant-numeric:tabular-nums}
+.kc .treat{font-family:var(--f-display);font-weight:700;color:var(--accent)}
+.chart .bar3{fill:var(--accent);opacity:.55}
 .tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
 .tile span{color:var(--muted);font-size:.9rem}
@@ -165,9 +173,9 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
 .chart .ln{stroke:var(--accent);stroke-width:3.5;fill:none;stroke-linejoin:round;stroke-linecap:round}
 .chart .area{fill:var(--accent);opacity:.14}
 .chart .dot{fill:var(--accent);stroke:var(--surface);stroke-width:3}
-.chart .tl{fill:var(--muted);font:14px var(--f-body)}
+.chart .tl{fill:var(--muted);font:20px var(--f-body)}
 .chart .warmt{fill:var(--warm);font-weight:700}
-.chart .tv{fill:var(--ink);font:700 16px var(--f-display)}
+.chart .tv{fill:var(--ink);font:700 22px var(--f-display)}
 .chart .bar{fill:var(--accent)}
 .chart .bar2{fill:var(--warm);opacity:.75}
 .lk{display:inline-block;width:18px;height:0;vertical-align:middle;margin-right:6px}
@@ -215,6 +223,7 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
       <div class="row"><label id="l-kind">種類</label>
         <div class="seg" role="group" aria-labelledby="l-kind" id="kindSeg"><button data-v="family">家族</button><button data-v="guest">ゲスト</button></div></div>
       <div class="row"><label for="pName">名前</label><input id="pName" maxlength="12" placeholder="例：おじいちゃん"></div>
+      <div class="row"><label for="pWeight">体重 kg（消費カロリーの計算に使います）</label><input id="pWeight" class="tx" type="number" inputmode="decimal" min="20" max="200" step="0.1" placeholder="例：70"></div>
       <div class="row"><label for="pAge">年齢（体力測定に使います）</label><input id="pAge" type="number" inputmode="numeric" min="10" max="100" placeholder="例：68"></div>
       <div class="row"><label id="l-sex">性別（体力測定に使います）</label>
         <div class="seg" role="group" aria-labelledby="l-sex" id="sexSeg"><button id="sx-m" data-v="m">男性</button><button id="sx-f" data-v="f">女性</button></div></div>
@@ -245,6 +254,7 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
         <button id="lv-l" data-v="light">かるめ</button><button id="lv-n" data-v="normal">ふつう</button><button id="lv-h" data-v="hard">しっかり</button></div></div>
     <div class="row" id="withRow"><label id="l-with">一緒にやる人（えらんだ人にも同じポイントが入ります）</label><div class="people" id="withBox" role="group" aria-labelledby="l-with"></div></div>
     <p class="lead" id="total"></p>
+    <p class="kcline" id="kcLine"></p>
     <p class="nowtip" id="nowTip"></p>
     <button class="big" id="startBtn">はじめる</button>
     <button class="ghost" id="testBtn">声のテスト</button>
@@ -348,6 +358,7 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
     <div class="medal">完了</div>
     <h2 id="finTitle">おつかれさまでした</h2>
     <p class="lead" id="finText"></p>
+    <div id="finKcal" class="finkcal"></div>
     <button class="big" id="backBtn">メニューにもどる</button>
   </div>
 </div>
@@ -367,7 +378,7 @@ if(!people){people=[{id:'p1',name:'わたし',tier:'60',menu:'both',level:'norma
 recs=recs||{};
 let curId=store.get('kt-cur',people[0].id);
 const cur=()=>people.find(p=>p.id===curId)||people[0];
-const PF=['name','age','sex','tier','kind','menu','level'];
+const PF=['name','age','sex','tier','kind','menu','level','weight'];
 const pkey=q=>{const o={};PF.forEach(f=>o[f]=q[f]??null);return o};
 let pSnap=new Map(people.map(q=>[q.id,pkey(q)]));
 /* 変更した項目にだけ変更時刻を付ける（q.uf）。同期のとき、項目ごとに新しい方を使う */
@@ -573,7 +584,8 @@ function paint(){
   document.querySelectorAll('.seg[data-key]').forEach(g=>press(g,p[g.dataset.key]));
   const secs=steps().reduce((a,s)=>a+s.dur,0);
   const grp=people.filter(q=>withIds.has(q.id));
-  $('total').innerHTML=`${grp.length?`<b>みんなで ${grp.length+1}人</b>（${[p,...grp].map(q=>esc(q.name)).join('・')}）`:esc(p.name)+'さん'}・${TIERNAME[p.tier]}メニュー　所要時間 およそ ${Math.max(1,Math.round(secs/60))} 分　<span class="pts">1回 ${fmtP(ptsOf(p.tier,p.menu,p.level))} ポイント</span>`;
+  $('total').innerHTML=`${grp.length?`<b>みんなで ${grp.length+1}人</b>（${[p,...grp].map(q=>esc(q.name)).join('・')}）`:esc(p.name)+'さん'}・${TIERNAME[p.tier]}メニュー　所要時間 およそ ${Math.max(1,Math.round(secs/60))} 分　<span class="pts">1回 ${fmtP(ptsOf(p.tier,p.menu,p.level))} ポイント・約${Math.round(sessKcal(p.tier,p.menu,p.level,p))}kcal</span>`;
+  {const td=dayKcal(p.id,dkey(new Date()));$('kcLine').innerHTML=`今日の${esc(p.name)}さんの消費：<b>約${Math.round(td)}kcal</b>　${esc(treatText(td))}${p.weight?'':`<br><small>体重が未登録のため ${kgOf(p)}kg で計算しています。「名前・年代を変える」で登録できます。</small>`}`}
   const ex=$('exList');ex.innerHTML='';
   blocks(p).forEach(b=>{
     const h=document.createElement('h2');h.textContent=(b==='base'?'① ':'② ')+CAT[b];ex.appendChild(h);
@@ -594,6 +606,7 @@ $('sexSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{formSex=b.datas
 function openForm(isNew){
   formNew=isNew;const p=cur();
   $('pName').value=isNew?'':p.name;formTier=isNew?'40':p.tier;press($('tierSeg'),formTier);
+  $('pWeight').value=isNew?'':(p.weight||'');
   $('pAge').value=isNew?'':(p.age||'');formSex=isNew?'':(p.sex||'');press($('sexSeg'),formSex);
   formKind=isNew?'family':(p.kind||'family');press($('kindSeg'),formKind);
   $('delBtn').hidden=isNew||people.length<2;delArmed=false;$('delBtn').textContent='この人を削除';
@@ -605,9 +618,9 @@ $('editBtn').onclick=()=>openForm(false);
 $('cancelBtn').onclick=closeForm;
 $('saveBtn').onclick=()=>{
   const name=$('pName').value.trim()||'なまえ';
-  const age=parseInt($('pAge').value,10)||null;
-  if(formNew){const id='p'+Date.now();people.push({id,name,tier:formTier,menu:'both',level:'normal',age,sex:formSex||null,kind:formKind});curId=id}
-  else{const p=cur();p.name=name;p.tier=formTier;p.age=age;p.sex=formSex||null;p.kind=formKind}
+  const age=parseInt($('pAge').value,10)||null,wt=parseFloat($('pWeight').value)||null;
+  if(formNew){const id='p'+Date.now();people.push({id,name,tier:formTier,menu:'both',level:'normal',age,sex:formSex||null,kind:formKind,weight:wt});curId=id}
+  else{const p=cur();p.name=name;p.tier=formTier;p.age=age;p.sex=formSex||null;p.kind=formKind;p.weight=wt}
   savePeople();closeForm();paint();
 };
 $('delBtn').onclick=()=>{
@@ -678,11 +691,15 @@ function finish(){
   store.set('kt-recs',recs);saveG();
   crew.forEach(q=>{const st=goalState(q.id);let gl='';
     if(st&&!st.over){const rest=Math.max(0,st.g.target-st.e);gl=rest>0?`目標まで あと ${fmtP(rest)}`:'目標達成！'}
-    lines.push(`${q.name}さん ＋${fmtP(pt)}${gl?`（${gl}）`:''}`)});
+    const kc=sessKcal(p.tier,p.menu,p.level,q),td=dayKcal(q.id,key);
+    lines.push(`${q.name}さん ＋${fmtP(pt)}ポイント・約${Math.round(kc)}kcal（今日の合計 約${Math.round(td)}kcal）${gl?`　${gl}`:''}`)});
   const names=crew.map(q=>q.name+'さん').join('、');
-  say(`${names}、おつかれさまでした。${crew.length>1?'それぞれ':''}${fmtP(pt)}ポイント獲得です。`);
+  const kc0=sessKcal(p.tier,p.menu,p.level,p),td0=dayKcal(p.id,key);
+  say(`${names}、おつかれさまでした。${crew.length>1?'それぞれ':''}${fmtP(pt)}ポイント獲得です。${crew.length>1?p.name+'さんは':''}約${Math.round(kc0)}キロカロリー消費しました。今日の合計は約${Math.round(td0)}キロカロリーです。${treatSay(td0)}`);
   $('finTitle').textContent=`${names}、おつかれさまでした`;
-  $('finText').textContent=`${TIERNAME[p.tier]}の${blocks(p).map(b=>CAT[b]).join('と')}ができました。　`+lines.join('　');
+  $('finText').textContent=`${TIERNAME[p.tier]}の${blocks(p).map(b=>CAT[b]).join('と')}ができました。`;
+  $('finKcal').innerHTML=crew.map(q=>{const td=dayKcal(q.id,key);return `<div class="kc"><b>${esc(q.name)}さん</b><span>今回 約<strong>${Math.round(sessKcal(p.tier,p.menu,p.level,q))}</strong>kcal　今日の合計 約<strong>${Math.round(td)}</strong>kcal</span><span class="treat">${treatText(td)}</span></div>`}).join('')+
+    `<p class="hint">${lines.map(esc).join('<br>')}</p>`;
   paint();show('fin');
 }
 
@@ -994,6 +1011,46 @@ function guidePanel(){
 }
 try{if(localStorage.getItem('kt-guide-open')==='1')$('guideBox').open=true}catch(e){}
 $('guideBox').addEventListener('toggle',()=>{try{localStorage.setItem('kt-guide-open',$('guideBox').open?'1':'0')}catch(e){}});
+/* ---- calories ----
+   消費カロリー（運動で増えた分）＝ 1.05 × (メッツ − 1) × 時間(h) × 体重(kg)
+   メッツは「改訂版 身体活動のメッツ表」（国立健康・栄養研究所）と Compendium of Physical Activities の目安。 */
+const METS=[['スクワット（うしろに椅子）',3.5],['ジャンプスクワット',8],['椅子スクワット',3.5],['スクワット',5],['ランジ',5],
+  ['バーピー',8],['マウンテンクライマー',8],['ジャンピングジャック',8],['その場もも上げ',4],['立ってもも上げ',3.5],
+  ['腕立て伏せ',3.8],['ひざつき腕立て',3.8],['サイドプランク',3.8],['プランク',3.8],['壁腕立て',3.5],['かかと上げ',3.5],
+  ['ヒップリフト',3.5],['立って上半身ひねり',3.5],['座って上半身ひねり',2.8],['座って膝上げ',2.8],['ドローイン',2.3],['片脚立ち',2.3]];
+const metOf=st=>{if(st.k==='prep'||st.k==='rest')return 1.3;const m=METS.find(([n])=>st.title.startsWith(n));return m?m[1]:3.5};
+const netCache={};
+function netMetH(tier,menu,level){const k=tier+menu+level;if(netCache[k]==null)netCache[k]=steps({tier,menu,level}).reduce((a,st)=>a+(metOf(st)-1)*st.dur/3600,0);return netCache[k]}
+const kgOf=q=>q&&q.weight?q.weight:(q&&q.sex==='f'?52:q&&q.sex==='m'?65:58);
+const sessKcal=(tier,menu,level,q)=>1.05*netMetH(tier,menu,level)*kgOf(q);
+function dayKcal(pid,d){const q=people.find(x=>x.id===pid);return (logs[pid]||[]).filter(l=>l.d===d).reduce((a,l)=>a+sessKcal(l.tier,l.menu,l.level,q),0)}
+function monthKcal(pid){const pre=monthPre(),q=people.find(x=>x.id===pid);return (logs[pid]||[]).filter(l=>l.d.startsWith(pre)).reduce((a,l)=>a+sessKcal(l.tier,l.menu,l.level,q),0)}
+/* 食べ物の目安（日本食品標準成分表をもとにした、だいたいの値） */
+const TREATS=[[35,'みかん1個'],[35,'栗の甘露煮1粒'],[75,'おせんべい1枚'],[90,'バナナ1本'],[140,'缶ビール1本（350ml）'],[200,'カップアイス1個'],[270,'板チョコ1枚']];
+const ICE=200;
+function treatText(k){
+  if(k<1)return '運動すると、ここに食べてよい目安が出ます。';
+  if(k>=ICE){const t=TREATS.filter(([c])=>c<=k).pop();return `カップアイス1個食べてもいいですよ！${t[1]!=='カップアイス1個'?`（${t[1]}分です）`:''}`}
+  const t=TREATS.filter(([c])=>c<=k).pop();
+  return `${t?t[1]+'分。':'みかん1個まであと '+Math.ceil(35-k)+'kcal。'}アイスまで あと ${Math.ceil(ICE-k)}kcal`;
+}
+function treatSay(k){return k>=ICE?'カップアイス1個、食べてもいいですよ。':`アイスまで、あと${Math.ceil(ICE-k)}キロカロリーです。`}
+function svgKcal(pid){
+  const today=new Date(),days=[];for(let i=13;i>=0;i--){const d=addD(today,-i);days.push([dkey(d),d])}
+  const vals=days.map(([k])=>dayKcal(pid,k)),W=600,H=250,L=30,R=16,T=30,B=44,top=Math.max(ICE*1.15,...vals.map(v=>v*1.12));
+  const bw=(W-L-R)/days.length,y=v=>T+(H-T-B)*(top-v)/top;
+  return `<svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="直近2週間の1日ごとの消費カロリー。今日 ${Math.round(vals[13])}kcal">
+   <line x1="${L}" x2="${W-R}" y1="${y(0)}" y2="${y(0)}" class="ax"/>
+   <line x1="${L}" x2="${W-R}" y1="${y(ICE)}" y2="${y(ICE)}" class="pace"/>
+   <text x="${W-R}" y="${y(ICE)-6}" class="tl warmt" text-anchor="end">アイス1個 ${ICE}kcal</text>
+   <text x="${L-6}" y="${y(0)+4}" class="tl" text-anchor="end">0</text>
+   ${days.map(([k,d],i)=>{const v=vals[i],cx=L+bw*i+bw/2,w=Math.min(26,bw*.62);
+     return (v>0?`<rect x="${cx-w/2}" y="${y(v)}" width="${w}" height="${y(0)-y(v)}" rx="3" class="${i===13?'bar':'bar3'}"/>`:'')+
+     (v>0&&(i===13||v===Math.max(...vals))?`<text x="${cx}" y="${y(v)-6}" class="tv" text-anchor="middle">${Math.round(v)}</text>`:'')+
+     ((i%2===1)||i===13?`<text x="${cx}" y="${H-14}" class="tl" text-anchor="middle">${i===13?'今日':(d.getMonth()+1)+'/'+d.getDate()}</text>`:'')}).join('')}
+  </svg>`;
+}
+
 /* ---- points board & profile ---- */
 const monthPre=()=>{const n=new Date();return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-`};
 const sumPts=(pid,pre)=>(logs[pid]||[]).filter(l=>!pre||l.d.startsWith(pre)).reduce((a,l)=>a+l.pts,0);
@@ -1016,7 +1073,7 @@ function svgGoal(pid,g){
     const k=dkey(d);cum+=(logs[pid]||[]).filter(l=>l.d===k).reduce((a,l)=>a+l.pts,0);
     if(k<today&&!done.has(k))cum-=pen;pts.push([i,cum]);minC=Math.min(minC,cum);maxC=Math.max(maxC,cum);
   }
-  const W=600,H=260,L=48,R=70,T=20,B=34,n=g.days-1||1,top=Math.max(g.target,maxC)*1.08,bot=Math.min(0,minC);
+  const W=600,H=280,L=60,R=80,T=28,B=40,n=g.days-1||1,top=Math.max(g.target,maxC)*1.08,bot=Math.min(0,minC);
   const x=i=>L+(W-L-R)*i/n,y=v=>T+(H-T-B)*(top-v)/((top-bot)||1);
   const line=pts.map(([i,v],k)=>`${k?'L':'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
   const area=pts.length?`M${x(0)},${y(0)}${pts.map(([i,v])=>`L${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('')}L${x(pts[pts.length-1][0]).toFixed(1)},${y(0)}Z`:'';
@@ -1036,7 +1093,7 @@ function svgGoal(pid,g){
   </svg>`;
 }
 function svgHist(list){
-  const items=list.slice(-6),W=600,H=220,L=40,R=16,T=24,B=40,top=Math.max(120,...items.map(h=>h.ach*100))*1.05;
+  const items=list.slice(-6),W=600,H=240,L=66,R=16,T=30,B=44,top=Math.max(120,...items.map(h=>h.ach*100))*1.05;
   const bw=(W-L-R)/items.length,y=v=>T+(H-T-B)*(top-v)/top;
   return `<svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="これまでの目標の達成率">
    <line x1="${L}" x2="${W-R}" y1="${y(0)}" y2="${y(0)}" class="ax"/>
@@ -1060,6 +1117,12 @@ function profile(pid){
     <div class="tile"><span>累計ポイント</span><b>${fmtP(all)}</b></div>
     <div class="tile"><span>今月の運動日数</span><b>${days}<small>日</small></b></div>
     <div class="tile"><span>体力年齢</span><b>${last?decade(last.fit)+'<small>歳代</small>':'－'}</b></div>
+    <div class="tile"><span>今日の消費</span><b>${Math.round(dayKcal(pid,dkey(new Date())))}<small>kcal</small></b></div>
+    <div class="tile"><span>今月の消費</span><b>${Math.round(monthKcal(pid))}<small>kcal</small></b></div>
+   </div>
+   <div class="panel"><h2>1日ごとの消費カロリー（2週間）</h2>
+    <div class="chartbox">${svgKcal(pid)}</div>
+    <p class="hint">運動で増えた分の消費カロリーです（体重 ${kgOf(q)}kg${q.weight?'':'・未登録のため仮の値'}で計算）。点線はカップアイス1個（約200kcal）の目安。</p>
    </div>
    <div class="panel"><h2>いまの目標</h2>
     ${st?`<div class="gnum"><b class="${st.e<0?'neg':''}">${Math.floor(st.e/st.g.target*100)}%</b>　${fmtP(st.e)} / ${fmtP(st.g.target)} ポイント</div>
