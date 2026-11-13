@@ -139,6 +139,8 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
 .cmp .up{color:var(--accent);font-weight:700}
 .cmp .dn{color:var(--warm);font-weight:700}
 .pts{font-weight:700;color:var(--accent)}
+.tx{min-height:56px;font:1.05rem var(--f-body);padding:0 14px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink);width:100%;box-sizing:border-box;min-width:0}
+.tx:focus-visible{outline:3px solid var(--warm);outline-offset:2px}
 .guide-d summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:44px}
 .guide-d summary::-webkit-details-marker{display:none}
 .guide-d summary::after{content:"ひらく";font-weight:700;color:var(--accent);font-size:.95rem;flex:none}
@@ -249,6 +251,16 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
   </section>
 
   <section class="panel" aria-label="記録のバックアップ">
+    <h2>スマホ・PCの自動同期</h2>
+    <p class="lead">Googleドライブを保管庫にして、同じ合言葉の端末どうしで記録を自動で合わせます。家族で同じ合言葉を使えば、家族全員の記録を共有できます。</p>
+    <div class="row"><label for="gsUrl">ウェブアプリのURL</label><input id="gsUrl" class="tx" inputmode="url" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec"></div>
+    <div class="row"><label for="gsKey">合言葉（8文字以上がおすすめ）</label><input id="gsKey" class="tx" autocomplete="off" placeholder="例：kuri-taiso-2026"></div>
+    <button class="big" id="gsOn">つなぐ</button>
+    <div class="btns"><button class="ghost" id="gsNow">今すぐ同期</button><button class="ghost" id="gsOff">同期を止める</button></div>
+    <p class="hint" id="gsMsg">合言葉を知っている人は、この記録を見ることができます。家族以外には教えないでください。</p>
+  </section>
+
+  <section class="panel" aria-label="記録のバックアップ">
     <h2>記録のバックアップ・引っ越し</h2>
     <p class="lead">記録はこの端末の中に保存されています。別の端末（PC⇔スマホ）へ移すときや、念のための控えに使います。</p>
     <ol class="steps"><li>今の端末で「書き出す」を押し、できたファイルを保存します。</li><li>そのファイルをメールやLINEで自分に送ります。</li><li>もう一方の端末で「読み込む」を押し、そのファイルを選びます。</li></ol>
@@ -301,8 +313,8 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
 <script>
 (function(){
 const $=id=>document.getElementById(id);
-var SYNCKEYS=['kt-people','kt-recs','kt-tests','kt-logs','kt-goals','kt-goalhist'],syncTimer=null,syncReady=false,syncDirty=false;
-function queueSync(){syncDirty=true;if(!syncReady)return;clearTimeout(syncTimer);syncTimer=setTimeout(pushSync,1500)}
+var SYNCKEYS=['kt-people','kt-recs','kt-tests','kt-logs','kt-goals','kt-goalhist','kt-dels'],syncTimer=null,syncApplying=false;
+function queueSync(){if(syncApplying)return;try{localStorage.setItem('kt-dirty','1');localStorage.setItem('kt-mtime',String(Date.now()))}catch(e){}clearTimeout(syncTimer);syncTimer=setTimeout(()=>gsSync(),2000)}
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
              set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}if(SYNCKEYS.indexOf(k)>=0)queueSync()}};
 
@@ -543,7 +555,7 @@ $('saveBtn').onclick=()=>{
 };
 $('delBtn').onclick=()=>{
   if(!delArmed){delArmed=true;$('delBtn').textContent='もう一度押すと削除します（記録も消えます）';return}
-  people=people.filter(p=>p.id!==curId);delete recs[curId];store.set('kt-recs',recs);delete logs[curId];delete goals[curId];delete ghist[curId];delete tests[curId];store.set('kt-tests',tests);saveG();curId=people[0].id;savePeople();closeForm();paint();
+  dels.push(curId);store.set('kt-dels',dels);people=people.filter(p=>p.id!==curId);delete recs[curId];store.set('kt-recs',recs);delete logs[curId];delete goals[curId];delete ghist[curId];delete tests[curId];store.set('kt-tests',tests);saveG();curId=people[0].id;savePeople();closeForm();paint();
 };
 
 /* ---- engine ---- */
@@ -552,7 +564,7 @@ const total=()=>L.reduce((a,s)=>a+s.dur,0);
 const before=n=>L.slice(0,n).reduce((a,s)=>a+s.dur,0);
 async function wake(){try{lock=await navigator.wakeLock.request('screen')}catch(e){lock=null}}
 function unwake(){try{lock&&lock.release()}catch(e){}lock=null}
-function show(id){['home','run','fin','test'].forEach(x=>$(x).hidden=x!==id);window.scrollTo(0,0);if(id==='home'&&pendingRemote){const d=pendingRemote;pendingRemote=null;if((d.rev||0)>syncRev)applyState(d)}}
+function show(id){['home','run','fin','test'].forEach(x=>$(x).hidden=x!==id);window.scrollTo(0,0);if(id==='home'&&pendingRemote){const d=pendingRemote;pendingRemote=null;applyState(mergeDocs(packState(),d))}}
 function enter(n){
   i=n;const s=L[i];t0=performance.now();lastRem=-1;lastPhase='';
   const pic=$('runPic');pic.parentNode.hidden=!s.pic;if(s.pic&&!pic.src.endsWith(s.pic+'.jpg'))pic.src=s.pic+'.jpg';
@@ -602,7 +614,7 @@ function finish(){
   const p=cur(),key=dkey(new Date());
   const days=recs[p.id]||(recs[p.id]=[]);if(!days.includes(key)){days.push(key);store.set('kt-recs',recs)}
   const pt=ptsOf(p.tier,p.menu,p.level);
-  (logs[p.id]||(logs[p.id]=[])).push({d:key,tier:p.tier,menu:p.menu,level:p.level,pts:pt});saveG();
+  (logs[p.id]||(logs[p.id]=[])).push({d:key,tier:p.tier,menu:p.menu,level:p.level,pts:pt,t:Date.now()});saveG();
   const st=goalState(p.id);
   let gl='';if(st&&!st.over){const rest=Math.max(0,st.g.target-st.e);gl=rest>0?`目標まで あと ${fmtP(rest)} ポイントです。`:'目標ポイントを達成しました！'}
   say(`${p.name}さん、おつかれさまでした。${fmtP(pt)}ポイント獲得です。${gl}`);
@@ -746,7 +758,7 @@ function fitResult(){
   let msg=dec>20?`${dec-10}歳代を目指して頑張りましょう。`:'このすばらしい体力をキープしましょう。';
   const cmp=dec<real?'実際の年齢より若い体力です！':dec>real?'実際の年齢より上の体力です。少しずつ取り戻しましょう。':'年齢相応の体力です。';
   const sug=String(p.age<20&&dec===20?10:Math.min(70,dec));
-  const d=dkey(new Date()),prev=(tests[p.id]||[]).slice(-1)[0],cur_={d,cs:r.cs,su:r.su,fit:Math.round(fitAge)};
+  const d=dkey(new Date()),prev=(tests[p.id]||[]).slice(-1)[0],cur_={d,cs:r.cs,su:r.su,fit:Math.round(fitAge),t:Date.now()};
   (tests[p.id]||(tests[p.id]=[])).push(cur_);store.set('kt-tests',tests);
   const cmpHtml=prev?compareHtml(prev,cur_):'';
   const ev=evalGoal(p,prev,cur_);
@@ -921,58 +933,96 @@ try{if(localStorage.getItem('kt-guide-open')==='1')$('guideBox').open=true}catch
 $('guideBox').addEventListener('toggle',()=>{try{localStorage.setItem('kt-guide-open',$('guideBox').open?'1':'0')}catch(e){}});
 $('fitBtn').onclick=fitIntro;
 
-/* ---- sync across devices (claude.ai db, private per signed-in person) ----
-   すべての記録を1つの文書 data/users/<id>/kintore にまとめて保存。
-   localStorage はその端末の控え（電波がないときもすぐ表示できるように）。 */
-var syncRef=null,syncWriting=Promise.resolve(),syncRev=store.get('kt-rev',0),pendingRemote=null;
+/* ---- sync across devices (Google Apps Script 保管庫) ----
+   家族の記録すべてを1つの文書にまとめ、合言葉ごとに Google ドライブへ保存。
+   2台で別々に記録しても消えないよう、運動記録・測定・カレンダーは「両方を合わせる」。
+   人の登録内容と目標は、あとで変更した端末のほうを使う。 */
+var pendingRemote=null,syncRev=0,gsBusy=false,gsAgain=false,gsLast=null;
+var dels=store.get('kt-dels',[]);
 function syncMsg(t,cls){const e=$('syncLine');e.textContent=t;e.className='sync'+(cls?' '+cls:'')}
 const hhmm=d=>`${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:v}catch(e){return d}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+function gsCfg(){const url=lsGet('kt-gs-url',''),key=lsGet('kt-gs-key','');return url&&key?{url,key}:null}
 function packState(){
-  const L={};for(const k in logs)L[k]=logs[k].map(l=>[l.d,l.tier,l.menu,l.level,l.pts].join('|'));
-  return {v:1,rev:syncRev,people,recs,tests,logs:L,goals,ghist};
+  const L={};for(const k in logs)L[k]=logs[k].map(l=>(l.t?[l.d,l.tier,l.menu,l.level,l.pts,l.t]:[l.d,l.tier,l.menu,l.level,l.pts]).join('|'));
+  return {v:2,mt:+lsGet('kt-mtime',0)||0,people,recs,tests,logs:L,goals,ghist,dels};
 }
 function applyState(d){
+  syncApplying=true;
   people=Array.isArray(d.people)&&d.people.length?d.people:people;
-  recs=d.recs||{};tests=d.tests||{};goals=d.goals||{};ghist=d.ghist||{};
-  logs={};const L=d.logs||{};for(const k in L)logs[k]=L[k].map(x=>{const a=String(x).split('|');return {d:a[0],tier:a[1],menu:a[2],level:a[3],pts:+a[4]}});
-  syncRev=d.rev||0;syncDirty=false;
-  try{for(const [k,v] of [['kt-people',people],['kt-recs',recs],['kt-tests',tests],['kt-logs',logs],['kt-goals',goals],['kt-goalhist',ghist],['kt-rev',syncRev]])localStorage.setItem(k,JSON.stringify(v))}catch(e){}
+  recs=d.recs||{};tests=d.tests||{};goals=d.goals||{};ghist=d.ghist||{};dels=d.dels||[];
+  logs={};const L=d.logs||{};for(const k in L)logs[k]=L[k].map(x=>{const a=String(x).split('|');const o={d:a[0],tier:a[1],menu:a[2],level:a[3],pts:+a[4]};if(a[5])o.t=+a[5];return o});
+  try{for(const [k,v] of [['kt-people',people],['kt-recs',recs],['kt-tests',tests],['kt-logs',logs],['kt-goals',goals],['kt-goalhist',ghist],['kt-dels',dels]])localStorage.setItem(k,JSON.stringify(v))}catch(e){}
+  if(d.mt)lsSet('kt-mtime',String(d.mt));
+  syncApplying=false;
   if(!people.find(q=>q.id===curId))curId=people[0].id;
   paint();
 }
-function pushSync(){
-  if(!syncRef)return;
-  syncDirty=false;syncRev=Date.now();try{localStorage.setItem('kt-rev',JSON.stringify(syncRev))}catch(e){}
-  const body=packState();
-  syncWriting=syncWriting.then(()=>syncRef.set(body)).then(()=>syncMsg(`ほかの端末と同期しました（${hhmm(new Date())}）`,'on'),e=>{
-    if(e&&e.code==='quota_exceeded'||e&&e.code==='invalid_argument')syncMsg('記録が多すぎて同期できませんでした。この端末には保存されています。','warn');
-    else{syncDirty=true;syncMsg('同期できませんでした。この端末には保存されています。電波のあるところで開き直してください。','warn')}
-  });
+function mergeDocs(a,b){
+  const newer=(b.mt||0)>(a.mt||0)?b:a,older=newer===a?b:a;
+  const dl=new Set([...(a.dels||[]),...(b.dels||[])]);
+  const pm=new Map();(older.people||[]).forEach(q=>pm.set(q.id,q));(newer.people||[]).forEach(q=>pm.set(q.id,q));
+  let ids=[...new Set([...(newer.people||[]).map(q=>q.id),...(older.people||[]).map(q=>q.id)])].filter(id=>!dl.has(id));
+  const people=ids.length?ids.map(id=>pm.get(id)):(newer.people||[]);
+  const multi=(xa,xb)=>{const ca=new Map(),cb=new Map(),f=(arr,m)=>(arr||[]).forEach(x=>{const k=typeof x==='string'?x:JSON.stringify(x);m.set(k,(m.get(k)||0)+1)});
+    f(xa,ca);f(xb,cb);const out=[];new Set([...ca.keys(),...cb.keys()]).forEach(k=>{const n=Math.max(ca.get(k)||0,cb.get(k)||0);for(let i=0;i<n;i++)out.push(k)});
+    return out.sort().map(k=>k[0]==='{'?JSON.parse(k):k)};
+  const per=f=>{const o={};new Set([...Object.keys(a[f]||{}),...Object.keys(b[f]||{})]).forEach(k=>{if(!dl.has(k))o[k]=multi((a[f]||{})[k],(b[f]||{})[k])});return o};
+  const goals={};const ng=newer.goals||{};Object.keys(ng).sort().forEach(k=>{if(!dl.has(k))goals[k]=ng[k]});
+  return {v:2,mt:Math.max(a.mt||0,b.mt||0),people,recs:per('recs'),tests:per('tests'),logs:per('logs'),goals,ghist:per('ghist'),dels:[...dl].sort()};
 }
+const canon=x=>{const c=mergeDocs(x,x);delete c.mt;return JSON.stringify(c)};
 function onHome(){return !$('home').hidden}
-async function startSync(){
+function applyMerged(m){if(onHome())applyState(m);else pendingRemote=m}
+async function gsGet(c){const r=await fetch(c.url+'?key='+encodeURIComponent(c.key)+'&_='+Date.now(),{cache:'no-store'});return r.json()}
+async function gsPost(c,data,baseRev){const r=await fetch(c.url,{method:'POST',body:JSON.stringify({key:c.key,data,baseRev})});return r.json()}
+async function gsSync(){
+  const c=gsCfg();
+  if(!c){syncMsg('記録はこの端末に保存しています。電波がなくても使えます。','on');return}
+  if(gsBusy){gsAgain=true;return}
+  gsBusy=true;syncMsg('同期しています…');
   try{
-    const [db,user]=await Promise.all([window.claude?.use?.('db'),window.claude?.use?.('user')]);
-    if(!db||!user){syncMsg('この端末だけに保存しています（同期するには claude.ai にログインして開いてください）');return}
-    const uid=await user.id();
-    if(!uid){syncMsg('この端末だけに保存しています（同期するには claude.ai にログインして開いてください）');return}
-    syncRef=db.doc('data/users/'+uid+'/kintore');
-    syncMsg('ほかの端末と同期しています…');
-    let first=true;
-    const t=setTimeout(()=>{if(first)syncMsg('同期先につながりません。この端末の記録を表示しています。','warn')},10000);
-    syncRef.onSnapshot(snap=>{
-      if(snap.metadata.hasPendingWrites)return;
-      if(!snap.metadata.fromCache){clearTimeout(t)}
-      if(!snap.exists){ if(first&&!snap.metadata.fromCache){first=false;syncReady=true;pushSync()} return }
-      const d=snap.data(),remoteRev=d.rev||0;
-      if(remoteRev>syncRev){ if(onHome())applyState(d);else pendingRemote=d }
-      else if(remoteRev<syncRev&&!snap.metadata.fromCache&&first){syncReady=true;pushSync()}
-      if(!snap.metadata.fromCache){first=false;syncReady=true;if(syncDirty)queueSync();
-        if(!$('syncLine').classList.contains('warn'))syncMsg(`ほかの端末と同期しています（${hhmm(new Date())}）`,'on')}
-    },e=>{clearTimeout(t);syncMsg('同期が止まりました。この端末には保存されています。ページを開き直すと再開します。','warn')});
-  }catch(e){syncMsg('この端末だけに保存しています')}
+    if(!navigator.onLine)throw {offline:true};
+    let r=await gsGet(c);if(!r||!r.ok)throw r;
+    for(let i=0;i<4;i++){
+      const dirty=lsGet('kt-dirty','')==='1',local=packState();
+      const merged=r.data?mergeDocs(local,r.data):local;
+      if(canon(merged)!==canon(local))applyMerged(merged);
+      if(r.data&&canon(merged)===canon(r.data)){lsSet('kt-dirty','');break}
+      const pr=await gsPost(c,merged,r.rev||0);
+      if(pr&&pr.ok){if(lsGet('kt-mtime','')===String(local.mt))lsSet('kt-dirty','');break}
+      if(pr&&pr.conflict){r={ok:true,rev:pr.rev,data:pr.data};continue}
+      throw pr;
+    }
+    gsLast=new Date();syncMsg(`スマホ・PCと自動同期しています（${hhmm(gsLast)} に同期）`,'on');
+  }catch(e){
+    if(e&&e.error==='key')syncMsg('合言葉が短すぎます。4文字以上にしてください。','warn');
+    else if(e&&e.offline)syncMsg('電波がないため、この端末に保存しています。つながったら自動で同期します。','warn');
+    else syncMsg('同期できませんでした。この端末には保存されています。あとで自動でやり直します。','warn');
+  }
+  gsBusy=false;if(gsAgain){gsAgain=false;gsSync()}
 }
-
+function gsPanel(){
+  const c=gsCfg();$('gsUrl').value=lsGet('kt-gs-url','');$('gsKey').value=lsGet('kt-gs-key','');
+  $('gsOff').hidden=!c;$('gsNow').hidden=!c;
+}
+$('gsOn').onclick=async()=>{
+  const url=$('gsUrl').value.trim(),key=$('gsKey').value.trim();
+  if(!/^https:\/\/script\.google(usercontent)?\.com\/.+/.test(url)){$('gsMsg').textContent='URLは「https://script.google.com/macros/s/…/exec」の形です。もう一度コピーしてください。';return}
+  if(key.length<4){$('gsMsg').textContent='合言葉は4文字以上にしてください（8文字以上がおすすめです）。';return}
+  $('gsMsg').textContent='つないでいます…';
+  try{const r=await gsGet({url,key});if(!r||!r.ok)throw r;
+    lsSet('kt-gs-url',url);lsSet('kt-gs-key',key);lsSet('kt-dirty','1');gsPanel();
+    $('gsMsg').textContent=r.data?'つながりました。保管庫にある記録と、この端末の記録を合わせます。':'つながりました。この端末の記録を保管庫に保存します。';
+    await gsSync();
+  }catch(e){$('gsMsg').textContent='つながりませんでした。URLが正しいか、デプロイで「アクセスできるユーザー：全員」になっているかを確かめてください。'}
+};
+$('gsOff').onclick=()=>{lsSet('kt-gs-url','');lsSet('kt-gs-key','');gsPanel();$('gsMsg').textContent='自動同期を止めました。記録はこの端末に残っています。';gsSync()};
+$('gsNow').onclick=()=>gsSync();
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')gsSync()});
+window.addEventListener('online',()=>gsSync());
+setInterval(()=>{if(document.visibilityState==='visible'&&onHome())gsSync()},60000);
 /* ---- backup (standalone) ---- */
 $('expBtn').onclick=()=>{
   const data=packState();data.app='wagaya-taiso';data.exportedAt=new Date().toISOString();
@@ -981,12 +1031,13 @@ $('expBtn').onclick=()=>{
   document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
   $('bkMsg').textContent='書き出しました。ダウンロードしたファイルを、もう一方の端末に送ってください。';
 };
+gsPanel();gsSync();
 $('impFile').onchange=()=>{
   const f=$('impFile').files[0];if(!f)return;
   const rd=new FileReader();
   rd.onload=()=>{
     try{const d=JSON.parse(rd.result);if(d.app!=='wagaya-taiso'||!Array.isArray(d.people))throw 0;
-      applyState(d);$('bkMsg').textContent=`読み込みました（${d.exportedAt?new Date(d.exportedAt).toLocaleString('ja-JP'):''}の記録）。`;say('記録を読み込みました。')}
+      applyState(d);lsSet('kt-dirty','1');lsSet('kt-mtime',String(Date.now()));gsSync();$('bkMsg').textContent=`読み込みました（${d.exportedAt?new Date(d.exportedAt).toLocaleString('ja-JP'):''}の記録）。`;say('記録を読み込みました。')}
     catch(e){$('bkMsg').textContent='このファイルは読み込めませんでした。「記録を書き出す」で作ったファイルを選んでください。'}
     $('impFile').value='';
   };
