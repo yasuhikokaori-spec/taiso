@@ -152,6 +152,7 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
 .brow .pv b{font:900 1.4rem var(--f-display);display:block}
 .brow .pv small{color:var(--muted);font-size:.78rem}
 .brow:focus-visible{outline:3px solid var(--warm);outline-offset:2px}
+.vdate{font-size:.85rem;font-weight:400;color:var(--muted);margin-left:6px}
 .kcline{background:var(--bg);border-radius:12px;padding:10px 14px}
 .kcline b{font-family:var(--f-display);font-size:1.25rem;color:var(--warm)}
 .kcline small{color:var(--muted)}
@@ -332,6 +333,27 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
 
   <p class="note">痛み・めまい・息苦しさを感じたら、すぐに中止してください。回数より「毎日少しずつ」が大切です。</p>
   <p class="hint">体力年齢の判定基準：中谷敏昭ら「30秒椅子立ち上がりテスト（CS-30テスト）成績の加齢変化と標準値の作成」臨床スポーツ医学 20(3), 2003／文部科学省「体力・運動能力調査」年齢別平均値（上体起こし）。判定は目安で、医学的な診断ではありません。持病のある方は、運動を始める前に医師に相談してください。</p>
+  <section class="panel" aria-label="バージョン情報">
+    <details class="guide-d">
+      <summary><h2>バージョン 1.8<small class="vdate">（2026年11月13日）</small></h2></summary>
+      <div class="gd">
+        <div class="tbl"><table>
+          <thead><tr><th>版</th><th>日付</th><th>おもな変更</th></tr></thead>
+          <tbody>
+            <tr><th>1.8</th><td>11/13</td><td>性別を「女性」にした人に、ひざつき腕立て・かかと落とし・骨盤底筋トレを自動で追加</td></tr>
+            <tr><th>1.7</th><td>11/13</td><td>③ 立ったまま（外出先）メニュー、3・5・7・10分の時間指定メニュー</td></tr>
+            <tr><th>1.6</th><td>11/13</td><td>体重の記録とグラフ、週1回のお知らせ</td></tr>
+            <tr><th>1.5</th><td>11/13</td><td>消費カロリーの表示とグラフ、食べてよい目安</td></tr>
+            <tr><th>1.4</th><td>11/13</td><td>みんなで同時に運動、ゲスト登録、ポイント順位表、プロフィールとグラフ。同期で名前が戻る不具合を修正</td></tr>
+            <tr><th>1.3</th><td>11/13</td><td>Google ドライブを使ったスマホ・PCの自動同期</td></tr>
+            <tr><th>1.2</th><td>11/13</td><td>効果的な1日の使い方と、時間帯に合わせたひとこと</td></tr>
+            <tr><th>1.1</th><td>11/13</td><td>サボった日のマイナスポイント</td></tr>
+            <tr><th>1.0</th><td>11/13</td><td>GitHub で公開。電波がなくても使える。記録のバックアップ</td></tr>
+          </tbody></table></div>
+        <p class="hint">画面のバージョンが新しくならないときは、電波のあるところで開き直してください。</p>
+      </div>
+    </details>
+  </section>
 </div>
 
 <div class="wrap" id="run" hidden>
@@ -582,11 +604,32 @@ const STAND={
  '30':[squat(20,2),lunge(12,2),heelRaise(25,false),balanceOut(45,false),altTwist(true)],
  '20':[squat(20,2),lunge(15,2),heelRaise(25,false),balanceOut(60,false),altTwist(true)],
  '10':[squat(20,2),lunge(12,2),heelRaise(25,false),balanceOut(45,false),altTwist(true)]};
-const exOf=(tier,b)=>b==='stand'?STAND[tier]:MENUS[tier][b];
+/* ---- 女性向けの追加・置きかえ（性別を「女性」にした人に自動で） ----
+   ・腕立て伏せ → ひざつき腕立て　・基本と立ったままに かかと落とし（骨に刺激）　・おなかと立ったままに 骨盤底筋トレ（尿もれ予防） */
+const kneePush=(reps,sets)=>R({name:'ひざつき腕立て',pic:'pushup',reps,sets,rest:30,desc:'ひざを床について腕立て伏せ。女性向けに最初からひざつきにしています。慣れたら、ひざを浮かせてもかまいません。',
+  prepGuide:'床にひざをつき、肩の真下に両手をつきます。頭からひざまで一直線に。',prepSay:'ひざつき腕立てです。床にひざをついて、肩の下に両手をつきましょう。',
+  ph:PD(2,1.5,'吸いながら体を下ろす','吐きながら床を押してもどる'),guide:'頭からひざまで一直線。腰を反らさないように。'});
+const heelDrop=(reps,support)=>R({name:'かかと落とし',pic:'heel',reps,desc:'かかとを上げて、ストンと下ろす。骨に軽い刺激が入り、骨を丈夫にするのに役立ちます。',
+  prepGuide:(support?'椅子の背や壁に手を添え、':'')+'足を腰幅に開いてまっすぐ立ちます。',prepSay:'かかと落としです。'+(support?'椅子や壁に手を添えて、':'')+'まっすぐ立ちましょう。',
+  ph:[{d:1.5,label:'かかとを上げる',g:'up'},{d:1.5,label:'ストンと下ろす',g:'down'}],
+  guide:support?'下ろすときは軽めに。ひざや腰に響くときは、そっと下ろしてください。':'ひざを軽くゆるめて、かかとからストンと。ひざや腰に響くときは弱めに。'});
+const pelvic=reps=>R({name:'骨盤底筋トレ',reps,desc:'おしっこを途中で止めるように、お尻の穴と尿道のまわりをキュッと締めて5秒、ゆるめて5秒。尿もれの予防になります。',
+  prepGuide:'椅子に座るか立って、背すじを伸ばします。お腹や太ももには力を入れません。',prepSay:'骨盤底筋トレです。背すじを伸ばして、楽にしましょう。',
+  ph:[{d:5,label:'キュッと締める',g:'up'},{d:5,label:'ゆるめる',g:'down',say:'ゆるめて'}],
+  guide:'呼吸は止めずに。締めるのは骨盤の底だけで、お腹やお尻全体に力を入れないように。',sayRep:r=>`${r}回目。締めて`});
+const FEM={};
+function femList(tier,b){
+  const k=tier+b;if(FEM[k])return FEM[k];
+  const old=+tier>=60;let list=(b==='stand'?STAND[tier]:MENUS[tier][b]).map(e=>e.name==='腕立て伏せ'?kneePush(e.src.reps,e.src.sets):e);
+  if(b==='base'||b==='stand')list=[...list,heelDrop(+tier>=70?10:old?15:20,old)];
+  if(b==='belly'||b==='stand')list=[...list,pelvic(old?8:10)];
+  return FEM[k]=list;
+}
+const exOf=(tier,b,sex)=>sex==='f'?femList(tier,b):(b==='stand'?STAND[tier]:MENUS[tier][b]);
 const isQuick=p=>p.mins&&p.mins!=='full';
 function quickPlan(p){
   const old=+p.tier>=60,adj={light:-10,normal:0,hard:10}[p.level]||0;
-  const work=(old?30:40)+adj,rest=old?20:15,list=blocks(p).flatMap(b=>exOf(p.tier,b));
+  const work=(old?30:40)+adj,rest=old?20:15,list=blocks(p).flatMap(b=>exOf(p.tier,b,p.sex));
   const n=Math.max(2,Math.floor((+p.mins*60-10)/(work+rest)));
   return {work,rest,n,items:Array.from({length:n},(_,i)=>list[i%list.length])};
 }
@@ -606,7 +649,7 @@ function steps(p=cur()){
   const M=MENUS[p.tier],L=[];
   blocks(p).forEach((b,bi)=>{
     if(bi>0)L.push({k:'rest',title:'休憩',kicker:'ひと息',dur:M.rest,guide:'深呼吸して、次はおなかメニューです。',say:'休憩です。次はおなかメニューです。'});
-    exOf(p.tier,b).forEach(e=>e.build(L,p.level,CAT[b]));
+    exOf(p.tier,b,p.sex).forEach(e=>e.build(L,p.level,CAT[b]));
   });
   return L;
 }
@@ -641,7 +684,8 @@ function paint(){
   if(!isQuick(p))blocks(p).forEach(b=>{
     const h=document.createElement('h2');h.textContent=({base:'① ',belly:'② ',stand:'③ '})[b]+CAT[b];ex.appendChild(h);
     if(b==='stand'){const n=document.createElement('p');n.className='hint';n.textContent='床に寝たり椅子に座ったりせず、跳ばないので、外出先や旅先でもできます。手すりや壁があれば支えにしてください。';ex.appendChild(n)}
-    exOf(p.tier,b).forEach(e=>{
+    if(b!=='stand'&&p.sex==='f'&&b===blocks(p)[0]){const n=document.createElement('p');n.className='hint';n.textContent='女性向けに、腕立て伏せをひざつきにし、かかと落とし（骨を丈夫に）と骨盤底筋トレ（尿もれ予防）を入れています。';ex.appendChild(n)}
+    exOf(p.tier,b,p.sex).forEach(e=>{
       const d=document.createElement('div');d.className='ex';
       const t=document.createElement('b');t.textContent=`${e.name}　${e.count(p.level)}`;
       const s=document.createElement('span');s.textContent=e.desc;d.append(t,s);
@@ -1076,12 +1120,12 @@ $('guideBox').addEventListener('toggle',()=>{try{localStorage.setItem('kt-guide-
 const METS=[['スクワット（うしろに椅子）',3.5],['ジャンプスクワット',8],['椅子スクワット',3.5],['スクワット',5],['ランジ',5],
   ['バーピー',8],['マウンテンクライマー',8],['ジャンピングジャック',8],['その場もも上げ',4],['立ってもも上げ',3.5],
   ['腕立て伏せ',3.8],['ひざつき腕立て',3.8],['サイドプランク',3.8],['プランク',3.8],['壁腕立て',3.5],['かかと上げ',3.5],
-  ['ヒップリフト',3.5],['立って上半身ひねり',3.5],['座って上半身ひねり',2.8],['座って膝上げ',2.8],['ドローイン',2.3],['片脚立ち',2.3]];
+  ['ヒップリフト',3.5],['立って上半身ひねり',3.5],['座って上半身ひねり',2.8],['座って膝上げ',2.8],['ドローイン',2.3],['片脚立ち',2.3],['かかと落とし',3.5],['骨盤底筋トレ',1.8]];
 const metOf=st=>{if(st.k==='prep'||st.k==='rest')return 1.3;const m=METS.find(([n])=>st.title.startsWith(n));return m?m[1]:3.5};
 const netCache={};
-function netMetH(tier,menu,level,mins){const k=tier+menu+level+(mins||'');if(netCache[k]==null)netCache[k]=steps({tier,menu,level,mins}).reduce((a,st)=>a+(metOf(st)-1)*st.dur/3600,0);return netCache[k]}
+function netMetH(tier,menu,level,mins,sex){const k=tier+menu+level+(mins||'')+(sex||'');if(netCache[k]==null)netCache[k]=steps({tier,menu,level,mins,sex}).reduce((a,st)=>a+(metOf(st)-1)*st.dur/3600,0);return netCache[k]}
 const kgOf=q=>q&&q.weight?q.weight:(q&&q.sex==='f'?52:q&&q.sex==='m'?65:58);
-const sessKcal=(tier,menu,level,mins,q)=>1.05*netMetH(tier,menu,level,mins)*kgOf(q);
+const sessKcal=(tier,menu,level,mins,q)=>1.05*netMetH(tier,menu,level,mins,q&&q.sex)*kgOf(q);
 function dayKcal(pid,d){const q=people.find(x=>x.id===pid);return (logs[pid]||[]).filter(l=>l.d===d).reduce((a,l)=>a+sessKcal(l.tier,l.menu,l.level,l.mins,q),0)}
 function monthKcal(pid){const pre=monthPre(),q=people.find(x=>x.id===pid);return (logs[pid]||[]).filter(l=>l.d.startsWith(pre)).reduce((a,l)=>a+sessKcal(l.tier,l.menu,l.level,l.mins,q),0)}
 /* 食べ物の目安（日本食品標準成分表をもとにした、だいたいの値） */
