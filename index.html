@@ -275,6 +275,8 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
     <div class="row"><label id="l-level">強さ</label>
       <div class="seg" role="group" aria-labelledby="l-level" data-key="level">
         <button id="lv-l" data-v="light">かるめ</button><button id="lv-n" data-v="normal">ふつう</button><button id="lv-h" data-v="hard">しっかり</button></div></div>
+    <div class="row"><label id="l-cool">最後のクールダウン（内もも・太もも・ふくらはぎのストレッチ）</label>
+      <div class="seg" role="group" aria-labelledby="l-cool" data-key="cool"><button data-v="on">つける</button><button data-v="off">つけない</button></div></div>
     <div class="row" id="withRow"><label id="l-with">一緒にやる人（えらんだ人にも同じポイントが入ります）</label><div class="people" id="withBox" role="group" aria-labelledby="l-with"></div></div>
     <p class="lead" id="total"></p>
     <p class="kcline" id="kcLine"></p>
@@ -350,11 +352,12 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
   <p class="hint">体力年齢の判定基準：中谷敏昭ら「30秒椅子立ち上がりテスト（CS-30テスト）成績の加齢変化と標準値の作成」臨床スポーツ医学 20(3), 2003／文部科学省「体力・運動能力調査」年齢別平均値（上体起こし）。判定は目安で、医学的な診断ではありません。持病のある方は、運動を始める前に医師に相談してください。</p>
   <section class="panel" aria-label="バージョン情報">
     <details class="guide-d">
-      <summary><h2>バージョン 3.0<small class="vdate">（2026年11月15日）</small></h2></summary>
+      <summary><h2>バージョン 3.1<small class="vdate">（2026年11月15日）</small></h2></summary>
       <div class="gd">
         <div class="tbl"><table>
           <thead><tr><th>版</th><th>日付</th><th>おもな変更</th></tr></thead>
           <tbody>
+            <tr><th>3.1</th><td>11/15</td><td>運動の最後にクールダウン（内もも・太もも前・太もも裏・ふくらはぎのストレッチ）を自動で付ける。つけない設定も可</td></tr>
             <tr><th>3.0</th><td>11/15</td><td>体力測定の「30秒椅子立ち上がり」「30秒上体起こし」をカメラで数えられるように</td></tr>
             <tr><th>2.9</th><td>11/15</td><td>カメラで「ジャンピングジャック／ステップジャック」も数えられるように。起動後の待ち時間を10秒に</td></tr>
             <tr><th>2.8</th><td>11/15</td><td>カメラで「腕立て」（壁・椅子・ひざつき・腕立て伏せ）も数えられるように</td></tr>
@@ -469,7 +472,7 @@ if(!people){people=[{id:'p1',name:'わたし',tier:'60',menu:'both',level:'norma
 recs=recs||{};
 let curId=store.get('kt-cur',people[0].id);
 const cur=()=>people.find(p=>p.id===curId)||people[0];
-const PF=['name','age','sex','tier','kind','menu','level','weight','mins'];
+const PF=['name','age','sex','tier','kind','menu','level','weight','mins','cool'];
 const pkey=q=>{const o={};PF.forEach(f=>o[f]=q[f]??null);return o};
 let pSnap=new Map(people.map(q=>[q.id,pkey(q)]));
 /* 変更した項目にだけ変更時刻を付ける（q.uf）。同期のとき、項目ごとに新しい方を使う */
@@ -742,12 +745,35 @@ function quickSteps(p){
   L.push({k:'prep',title:`${p.mins}分メニュー`,kicker:'準備',dur:10,guide:`${n}種目を${work}秒ずつ行います。あいだに${rest}秒、次の準備の時間があります。`,say:`${p.mins}分メニューを始めます。${work}秒ずつ、${n}種目です。`});
   items.forEach((e,i)=>{
     const o=e.src||{},pg=typeof o.prepGuide==='function'?o.prepGuide('左','右'):(o.prepGuide||''),sw=!!o.sides;
-    L.push({k:'rest',exStart:true,ex:i,pic:e.pic,title:'次は '+e.name,kicker:`${i+1} / ${n}`,dur:rest,guide:pg+(sw?'　途中で左右を入れかえます。':''),next:`次のプログラム：${e.name}　${work}秒${sw?'（途中で左右を入れかえ）':''}`,say:`次のプログラムは、${e.name}、${work}秒です。${sw?'途中で左右を入れかえます。':''}`});
+    L.push({k:'rest',exStart:true,ann:1,ex:i,pic:e.pic,title:'次は '+e.name,kicker:`${i+1} / ${n}`,dur:rest,guide:pg+(sw?'　途中で左右を入れかえます。':''),next:`次のプログラム：${e.name}　${work}秒${sw?'（途中で左右を入れかえ）':''}`,say:`次のプログラムは、${e.name}、${work}秒です。${sw?'途中で左右を入れかえます。':''}`});
     L.push({k:'hold',ex:i,pic:e.pic,title:e.name,kicker:`${i+1} / ${n}`,dur:work,label:o.label||'リズムよく',guide:o.guide||e.desc,say:'スタート',sw,end:i===n-1?'おわりです。':null});
   });
   return L;
 }
 const blocks=p=>p.menu==='both'?['base','belly']:p.menu==='nojump'?['nbase','nbelly']:[p.menu];
+/* ---- クールダウン（運動の最後に自動で付ける）：つり予防に、内もも・太もも前・太もも裏・ふくらはぎを伸ばす。
+   椅子を使うので、どの年代でもできる。ポイントの割合の計算には入れない ---- */
+const ST=o=>H({label:'のばす',endSay:'はい、ゆるめてください。',sideLabel:a=>`（${a}）`,prepDur:6,...o});
+const COOL={
+ inner:d=>ST({name:'内もものストレッチ',dur:d,desc:'椅子に浅く座って脚を大きく開き、両手でひざを外へ押す。',
+   prepGuide:()=>'椅子に浅く座り、脚を大きく開きます。両手をひざの内側に当てます。',prepSay:()=>'内もものストレッチです。椅子に浅く座って、脚を大きく開きましょう。',
+   guide:'背すじを伸ばしたまま、両手でひざをゆっくり外へ押します。内ももが伸びているのを感じて。'}),
+ front:d=>ST({name:'太もも前のストレッチ',dur:d,sides:true,desc:'椅子の背につかまって立ち、片足の甲を持ってかかとをお尻に近づける。',
+   prepGuide:(b,a)=>`椅子の背や壁に${b}手をついて立ち、${a}足の甲を${a}手で持ちます。`,prepSay:a=>`太もも前のストレッチ、${a}足です。椅子につかまって、${a}足の甲を持ちましょう。`,
+   guide:'かかとをお尻に近づけ、ひざは下に向けます。足に手が届かないときは、無理をしないでください。'}),
+ back:d=>ST({name:'太もも裏のストレッチ',dur:d,sides:true,desc:'椅子に浅く座り、片脚を前に伸ばして、上体を前に倒す。',
+   prepGuide:(b,a)=>`椅子に浅く座り、${a}足を前に伸ばしてかかとを床につけ、つま先を上げます。`,prepSay:a=>`太もも裏のストレッチ、${a}足です。椅子に浅く座って、${a}足を前に伸ばしましょう。`,
+   guide:'背すじを伸ばしたまま、おへそから前に倒れます。ひざの裏と太ももの裏が伸びればOK。'}),
+ calf:d=>ST({name:'ふくらはぎのストレッチ',dur:d,sides:true,desc:'壁や椅子の背に手をつき、片足を後ろに引いてかかとを床につける。',
+   prepGuide:(b,a)=>`壁や椅子の背に両手をつき、${a}足を一歩うしろに引きます。`,prepSay:a=>`ふくらはぎのストレッチ、${a}足です。壁に手をついて、${a}足をうしろに引きましょう。`,
+   guide:'うしろ足のかかとを床につけたまま、前のひざをゆっくり曲げます。ふくらはぎが伸びればOK。'})};
+const COOLFULL=[COOL.inner(20),COOL.front(20),COOL.back(20),COOL.calf(20)],COOLSHORT=[COOL.inner(15),COOL.calf(15)];
+function coolSteps(short){
+  const C=[{k:'rest',title:'クールダウン',kicker:'仕上げ',dur:6,guide:'ゆっくり呼吸しながら、筋肉を伸ばします。反動はつけず、痛くないところまで。',say:'おつかれさまでした。最後にクールダウンです。',ann:1}];
+  (short?COOLSHORT:COOLFULL).forEach(e=>e.build(C,'normal','クールダウン'));C.forEach(x=>x.cool=true);return C;
+}
+const coolDur=short=>coolSteps(short).reduce((a,x)=>a+x.dur,0)+(short?8:16);
+function programSteps(p=cur()){const L=steps(p);return p.cool==='off'?L:announce([...L,...coolSteps(isQuick(p))])}
 /* 休憩中に「次のプログラムは ○○、14回、左右交互、2セットです」と案内する */
 function announce(L){
   L.forEach((st,i)=>{
@@ -794,10 +820,10 @@ function paint(){
     b.onclick=()=>{withIds.has(q.id)?withIds.delete(q.id):withIds.add(q.id);paint()};wb.appendChild(b)});
   board();
   $('whoTier').textContent=TIERNAME[p.tier];
-  document.querySelectorAll('.seg[data-key]').forEach(g=>press(g,p[g.dataset.key]??(g.dataset.key==='mins'?'full':'')));
+  document.querySelectorAll('.seg[data-key]').forEach(g=>press(g,p[g.dataset.key]??({mins:'full',cool:'on'}[g.dataset.key]||'')));
   const secs=steps().reduce((a,s)=>a+s.dur,0);
   const grp=people.filter(q=>withIds.has(q.id));
-  $('total').innerHTML=`${grp.length?`<b>みんなで ${grp.length+1}人</b>（${[p,...grp].map(q=>esc(q.name)).join('・')}）`:esc(p.name)+'さん'}・${TIERNAME[p.tier]}メニュー　所要時間 およそ ${Math.max(1,Math.round(secs/60))} 分　<span class="pts">1回 ${fmtP(ptsOf(p.tier,p.menu,p.level,p.mins))} ポイント・約${Math.round(sessKcal(p.tier,p.menu,p.level,p.mins,p))}kcal</span>`;
+  $('total').innerHTML=`${grp.length?`<b>みんなで ${grp.length+1}人</b>（${[p,...grp].map(q=>esc(q.name)).join('・')}）`:esc(p.name)+'さん'}・${TIERNAME[p.tier]}メニュー　所要時間 およそ ${Math.max(1,Math.round(secs/60))} 分${p.cool!=='off'?`（＋クールダウン約${Math.round(coolDur(isQuick(p))/60)}分）`:''}　<span class="pts">1回 ${fmtP(ptsOf(p.tier,p.menu,p.level,p.mins))} ポイント・約${Math.round(sessKcal(p.tier,p.menu,p.level,p.mins,p))}kcal</span>`;
   {const td=dayKcal(p.id,dkey(new Date()));$('kcLine').innerHTML=`今日の${esc(p.name)}さんの消費：<b>約${Math.round(td)}kcal</b>　${esc(treatText(td))}${p.weight?'':`<br><small>体重が未登録のため ${kgOf(p)}kg で計算しています。「名前・年代を変える」で登録できます。</small>`}${p.weight&&weightDue(p.id).due?`<br><button class="link" id="wDue">体重を測る日です。記録する</button>`:''}`;if($('wDue'))$('wDue').onclick=()=>{profile(p.id);setTimeout(()=>{const e=$('wPanel');e&&e.scrollIntoView({block:'start'})},50)}}
   const ex=$('exList');ex.innerHTML='';
   if(isQuick(p)){const q=quickPlan(p);const h=document.createElement('h2');h.textContent=`${p.mins}分メニュー（${q.work}秒 × ${q.n}種目）`;ex.appendChild(h);
@@ -865,7 +891,7 @@ function enter(n){
   say(s.say);
 }
 function start(){
-  L=steps();perf=[];skipped=0;autoPaused=false;stopArmed=0;show('run');paused=false;$('pauseBtn').textContent='一時停止';$('resumeBox').hidden=true;
+  L=programSteps();perf=[];skipped=0;autoPaused=false;stopArmed=0;show('run');paused=false;$('pauseBtn').textContent='一時停止';$('resumeBox').hidden=true;
   $('stopBtn').textContent='やめる';wake();enter(0);
   clearInterval(timer);timer=setInterval(tick,100);
 }
@@ -927,8 +953,9 @@ const mmss=sec=>{const m=Math.floor(sec/60),s=Math.round(sec%60);return m?`${m}�
 function endSession(early){
   clearInterval(timer);timer=null;unwake();speechSynthesis&&speechSynthesis.cancel();
   const p=cur(),key=dkey(new Date()),now=Date.now();
-  const act=L.reduce((a,s,k)=>a+((s.k==='rep'||s.k==='hold')?s.dur:0),0);
-  const actDone=L.reduce((a,s,k)=>a+((s.k==='rep'||s.k==='hold')?(perf[k]||0):0),0);
+  const isAct=s=>(s.k==='rep'||s.k==='hold')&&!s.cool;
+  const act=L.reduce((a,s,k)=>a+(isAct(s)?s.dur:0),0);
+  const actDone=L.reduce((a,s,k)=>a+(isAct(s)?(perf[k]||0):0),0);
   const sec=perf.reduce((a,v)=>a+(v||0),0),ratio=act?Math.min(1,actDone/act):0;
   const netH=L.reduce((a,s,k)=>a+(metOf(s)-1)*(perf[k]||0)/3600,0);
   const part=early||skipped>0;
@@ -1297,7 +1324,7 @@ $('guideBox').addEventListener('toggle',()=>{try{localStorage.setItem('kt-guide-
 const METS=[['スクワット（うしろに椅子）',3.5],['ジャンプスクワット',8],['椅子スクワット',3.5],['スクワット',5],['ランジ',5],
   ['バーピー（ジャンプなし）',5],['ステップジャック',4.5],['座って足伸ばし',2.8],['椅子腕立て',3.8],['バーピー',8],['マウンテンクライマー',8],['ジャンピングジャック',8],['その場もも上げ',4],['立ってもも上げ',3.5],
   ['腕立て伏せ',3.8],['ひざつき腕立て',3.8],['サイドプランク',3.8],['プランク',3.8],['壁腕立て',3.5],['かかと上げ',3.5],
-  ['ヒップリフト',3.5],['立って上半身ひねり',3.5],['座って上半身ひねり',2.8],['座って膝上げ',2.8],['ドローイン',2.3],['片脚立ち',2.3],['かかと落とし',3.5],['骨盤底筋トレ',1.8]];
+  ['ヒップリフト',3.5],['立って上半身ひねり',3.5],['座って上半身ひねり',2.8],['座って膝上げ',2.8],['ドローイン',2.3],['片脚立ち',2.3],['内もものストレッチ',2.3],['太もも前のストレッチ',2.3],['太もも裏のストレッチ',2.3],['ふくらはぎのストレッチ',2.3],['かかと落とし',3.5],['骨盤底筋トレ',1.8]];
 const metOf=st=>{if(st.k==='prep'||st.k==='rest')return 1.3;const m=METS.find(([n])=>st.title.startsWith(n));return m?m[1]:3.5};
 const netCache={};
 function netMetH(tier,menu,level,mins,sex){const k=tier+menu+level+(mins||'')+(sex||'');if(netCache[k]==null)netCache[k]=steps({tier,menu,level,mins,sex}).reduce((a,st)=>a+(metOf(st)-1)*st.dur/3600,0);return netCache[k]}
