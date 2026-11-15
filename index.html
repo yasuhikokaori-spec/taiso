@@ -352,11 +352,12 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
   <p class="hint">体力年齢の判定基準：中谷敏昭ら「30秒椅子立ち上がりテスト（CS-30テスト）成績の加齢変化と標準値の作成」臨床スポーツ医学 20(3), 2003／文部科学省「体力・運動能力調査」年齢別平均値（上体起こし）。判定は目安で、医学的な診断ではありません。持病のある方は、運動を始める前に医師に相談してください。</p>
   <section class="panel" aria-label="バージョン情報">
     <details class="guide-d">
-      <summary><h2>バージョン 3.2<small class="vdate">（2026年11月15日）</small></h2></summary>
+      <summary><h2>バージョン 3.3<small class="vdate">（2026年11月15日）</small></h2></summary>
       <div class="gd">
         <div class="tbl"><table>
           <thead><tr><th>版</th><th>日付</th><th>おもな変更</th></tr></thead>
           <tbody>
+            <tr><th>3.3</th><td>11/15</td><td>ストレッチ4種のイラスト。⑥ ストレッチは1か所30秒に。キープする種目の前に「3、2、1」のカウントダウン</td></tr>
             <tr><th>3.2</th><td>11/15</td><td>⑥ ストレッチ（クールダウン）をメニューとして単独で選べるように</td></tr>
             <tr><th>3.1</th><td>11/15</td><td>運動の最後にクールダウン（内もも・太もも前・太もも裏・ふくらはぎのストレッチ）を自動で付ける。つけない設定も可</td></tr>
             <tr><th>3.0</th><td>11/15</td><td>体力測定の「30秒椅子立ち上がり」「30秒上体起こし」をカメラで数えられるように</td></tr>
@@ -722,7 +723,7 @@ const noJump=list=>list.map(e=>e.name==='ジャンプスクワット'?squat(e.sr
 function rawList(tier,b){
   if(b==='stand')return STAND[tier];
   if(b==='chair')return CHAIR[tier];
-  if(b==='cool')return COOLFULL;
+  if(b==='cool')return COOLMENU;
   if(b==='nbase'||b==='nbelly'){const k=tier+b;return NJ[k]||(NJ[k]=noJump(MENUS[tier][b==='nbase'?'base':'belly']))}
   return MENUS[tier][b];
 }
@@ -755,21 +756,23 @@ function quickSteps(p){
 const blocks=p=>p.menu==='both'?['base','belly']:p.menu==='nojump'?['nbase','nbelly']:[p.menu];
 /* ---- クールダウン（運動の最後に自動で付ける）：つり予防に、内もも・太もも前・太もも裏・ふくらはぎを伸ばす。
    椅子を使うので、どの年代でもできる。ポイントの割合の計算には入れない ---- */
-const ST=o=>H({label:'のばす',endSay:'はい、ゆるめてください。',sideLabel:a=>`（${a}）`,prepDur:6,...o});
+const ST=o=>H({label:'のばす',endSay:'はい、ゆるめてください。',sideLabel:a=>`（${a}）`,prepDur:8,...o});
 const COOL={
- inner:d=>ST({name:'内もものストレッチ',dur:d,desc:'椅子に浅く座って脚を大きく開き、両手でひざを外へ押す。',
+ inner:d=>ST({name:'内もものストレッチ',pic:'st_inner',dur:d,desc:'椅子に浅く座って脚を大きく開き、両手でひざを外へ押す。',
    prepGuide:()=>'椅子に浅く座り、脚を大きく開きます。両手をひざの内側に当てます。',prepSay:()=>'内もものストレッチです。椅子に浅く座って、脚を大きく開きましょう。',
-   guide:'背すじを伸ばしたまま、両手でひざをゆっくり外へ押します。内ももが伸びているのを感じて。'}),
- front:d=>ST({name:'太もも前のストレッチ',dur:d,sides:true,desc:'椅子の背につかまって立ち、片足の甲を持ってかかとをお尻に近づける。',
+   guide:'背すじを伸ばしたまま、両手でひざをゆっくり外側へ押します。呼吸は止めずに、内ももの伸びを感じて。'}),
+ front:d=>ST({name:'太もも前のストレッチ',pic:'st_front',dur:d,sides:true,desc:'椅子の背につかまって立ち、片足の甲を持ってかかとをお尻に近づける。',
    prepGuide:(b,a)=>`椅子の背や壁に${b}手をついて立ち、${a}足の甲を${a}手で持ちます。`,prepSay:a=>`太もも前のストレッチ、${a}足です。椅子につかまって、${a}足の甲を持ちましょう。`,
-   guide:'かかとをお尻に近づけ、ひざは下に向けます。足に手が届かないときは、無理をしないでください。'}),
- back:d=>ST({name:'太もも裏のストレッチ',dur:d,sides:true,desc:'椅子に浅く座り、片脚を前に伸ばして、上体を前に倒す。',
+   guide:'かかとをお尻に近づけ、両ひざをそろえるように意識します。太ももの前側が伸びているのを感じて。足に手が届かないときは、無理をしないでください。'}),
+ back:d=>ST({name:'太もも裏のストレッチ',pic:'st_back',dur:d,sides:true,desc:'椅子に浅く座り、片脚を前に伸ばして、上体を前に倒す。',
    prepGuide:(b,a)=>`椅子に浅く座り、${a}足を前に伸ばしてかかとを床につけ、つま先を上げます。`,prepSay:a=>`太もも裏のストレッチ、${a}足です。椅子に浅く座って、${a}足を前に伸ばしましょう。`,
-   guide:'背すじを伸ばしたまま、おへそから前に倒れます。ひざの裏と太ももの裏が伸びればOK。'}),
- calf:d=>ST({name:'ふくらはぎのストレッチ',dur:d,sides:true,desc:'壁や椅子の背に手をつき、片足を後ろに引いてかかとを床につける。',
+   guide:'ひざを伸ばしたまま、背すじを伸ばして上体をゆっくり前に倒します。太ももの裏側が伸びているのを感じて。'}),
+ calf:d=>ST({name:'ふくらはぎのストレッチ',pic:'st_calf',dur:d,sides:true,desc:'壁や椅子の背に手をつき、片足を後ろに引いてかかとを床につける。',
    prepGuide:(b,a)=>`壁や椅子の背に両手をつき、${a}足を一歩うしろに引きます。`,prepSay:a=>`ふくらはぎのストレッチ、${a}足です。壁に手をついて、${a}足をうしろに引きましょう。`,
-   guide:'うしろ足のかかとを床につけたまま、前のひざをゆっくり曲げます。ふくらはぎが伸びればOK。'})};
+   guide:'うしろ足のひざを伸ばし、かかとを床につけたまま、前のひざをゆっくり曲げます。ふくらはぎが伸びているのを感じて。'})};
 const COOLFULL=[COOL.inner(20),COOL.front(20),COOL.back(20),COOL.calf(20)],COOLSHORT=[COOL.inner(15),COOL.calf(15)];
+/* ⑥ ストレッチ（単独メニュー）は、イラストのとおり1か所30秒 */
+const COOLMENU=[COOL.inner(30),COOL.front(30),COOL.back(30),COOL.calf(30)];
 function coolSteps(short){
   const C=[{k:'rest',title:'クールダウン',kicker:'仕上げ',dur:6,guide:'ゆっくり呼吸しながら、筋肉を伸ばします。反動はつけず、痛くないところまで。',say:'おつかれさまでした。最後にクールダウンです。',ann:1}];
   (short?COOLSHORT:COOLFULL).forEach(e=>e.build(C,'normal','クールダウン'));C.forEach(x=>x.cool=true);return C;
@@ -919,11 +922,12 @@ function tick(){
   }else{
     $('num').textContent=rem;$('unit').textContent='秒';
     $('gauge').style.height=((s.dur-el)/s.dur*100)+'%';
-    $('phase').textContent=s.k==='hold'?s.label:s.k==='rest'?'休憩中':'まもなく開始';
+    $('phase').textContent=s.k==='hold'?s.label:s.k==='rest'?'休憩中':(rem<=3&&L[i+1]&&L[i+1].k==='hold'?`まもなく開始 ${rem}`:'まもなく開始');
     if(rem!==lastRem){
       if(s.sw&&!s.swDone&&el>=s.dur/2){s.swDone=true;say('反対側に入れかえます')}
       else if(s.k==='hold'&&rem!==s.dur&&rem%10===0&&rem>3)say(`あと${rem}秒`);
       if((s.k==='hold'||s.k==='rest')&&rem<=3)say(String(rem));
+      else if(s.k==='prep'&&rem<=3&&rem>=1&&L[i+1]&&L[i+1].k==='hold')sayCount(String(rem));
     }
   }
   lastRem=rem;
