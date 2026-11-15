@@ -153,6 +153,7 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
 .brow .pv small{color:var(--muted);font-size:.78rem}
 .brow:focus-visible{outline:3px solid var(--warm);outline-offset:2px}
 .vdate{font-size:.85rem;font-weight:400;color:var(--muted);margin-left:6px}
+.nextline{font-family:var(--f-display);font-weight:700;font-size:1.2rem;color:var(--accent);border-left:4px solid var(--accent);padding-left:12px;margin:0}
 .kcline{background:var(--bg);border-radius:12px;padding:10px 14px}
 .kcline b{font-family:var(--f-display);font-size:1.25rem;color:var(--warm)}
 .kcline small{color:var(--muted)}
@@ -335,11 +336,12 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
   <p class="hint">体力年齢の判定基準：中谷敏昭ら「30秒椅子立ち上がりテスト（CS-30テスト）成績の加齢変化と標準値の作成」臨床スポーツ医学 20(3), 2003／文部科学省「体力・運動能力調査」年齢別平均値（上体起こし）。判定は目安で、医学的な診断ではありません。持病のある方は、運動を始める前に医師に相談してください。</p>
   <section class="panel" aria-label="バージョン情報">
     <details class="guide-d">
-      <summary><h2>バージョン 1.8<small class="vdate">（2026年11月13日）</small></h2></summary>
+      <summary><h2>バージョン 1.9<small class="vdate">（2026年11月15日）</small></h2></summary>
       <div class="gd">
         <div class="tbl"><table>
           <thead><tr><th>版</th><th>日付</th><th>おもな変更</th></tr></thead>
           <tbody>
+            <tr><th>1.9</th><td>11/15</td><td>休憩中と種目が変わる前の準備で、「次のプログラムは ○○、14回（左右交互）×2セットです」と声と画面で案内</td></tr>
             <tr><th>1.8</th><td>11/13</td><td>性別を「女性」にした人に、ひざつき腕立て・かかと落とし・骨盤底筋トレを自動で追加</td></tr>
             <tr><th>1.7</th><td>11/13</td><td>③ 立ったまま（外出先）メニュー、3・5・7・10分の時間指定メニュー</td></tr>
             <tr><th>1.6</th><td>11/13</td><td>体重の記録とグラフ、週1回のお知らせ</td></tr>
@@ -361,6 +363,7 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
     <span class="kicker" id="kicker">準備</span>
     <h2 id="title"></h2>
     <p class="guide" id="guide"></p>
+    <p class="nextline" id="nextLine" hidden></p>
   </div>
   <div class="pic"><img id="runPic" src="squat.jpg" alt="" width="797" height="889"></div>
   <div class="meter">
@@ -437,11 +440,12 @@ function R(o){ // repeated movement
   return {src:o,name:o.name,desc:o.desc,pic:o.pic,count:lv=>`${sc(o.reps,lv)}回${o.alt?'（左右交互）':''}${(o.sets||1)>1?`×${o.sets}セット`:''}`,
     build(L,lv,K){
       const n=sc(o.reps,lv),sets=o.sets||1;
-      L.push({k:'prep',pic:o.pic,title:o.name,kicker:K+'・準備',dur:o.prepDur||8,guide:o.prepGuide,say:o.prepSay});
+      const nx={name:o.name,cnt:`${n}回${o.alt?'（左右交互）':''}${sets>1?`×${sets}セット`:''}`,cntSay:`${n}回${o.alt?'、左右交互':''}${sets>1?`、${sets}セット`:''}`};
+      L.push({k:'prep',pic:o.pic,title:o.name,kicker:K+'・準備',dur:o.prepDur||8,guide:o.prepGuide,say:o.prepSay,nx});
       for(let s=1;s<=sets;s++){
         for(let r=1;r<=n;r++)L.push(rep({pic:o.pic,title:o.name,kicker:sets>1?`${K}・${s} セット目 / ${sets}`:K,rep:r,of:n,
           ph:o.ph,guide:o.guide,say:o.sayRep?o.sayRep(r):String(r)}));
-        if(s<sets)L.push({k:'rest',pic:o.pic,title:'休憩',kicker:'ひと息',dur:o.rest||20,guide:'深呼吸して、肩の力を抜きましょう。',say:'休憩です。深呼吸しましょう。'});
+        if(s<sets)L.push({k:'rest',pic:o.pic,title:'休憩',kicker:'ひと息',dur:o.rest||20,guide:'深呼吸して、肩の力を抜きましょう。',say:'休憩です。',nextSet:{name:o.name,s:s+1,cnt:`${n}回${o.alt?'（左右交互）':''}`,cntSay:`${n}回${o.alt?'、左右交互':''}`}});
       }
     }};
 }
@@ -449,12 +453,13 @@ function H(o){ // timed hold, optionally per side
   return {src:o,name:o.name,desc:o.desc,pic:o.pic,count:lv=>`${o.sides?'左右 各':''}${fmt(scT(o.dur,lv))}${(o.sets||1)>1?`×${o.sets}セット`:''}`,
     build(L,lv,K){
       const d=scT(o.dur,lv),sets=o.sets||1,sides=o.sides?[['右','左'],['左','右']]:[[null,null]],sl=o.sideLabel||(a=>`（${a}足を上げる）`);
-      sides.forEach(([a,b])=>{
+      const nx={name:o.name,cnt:`${o.sides?'左右 各':''}${fmt(d)}${sets>1?`×${sets}セット`:''}`,cntSay:`${o.sides?'左右それぞれ':''}${fmt(d)}${sets>1?`、${sets}セット`:''}`};
+      sides.forEach(([a,b],si)=>{
         const t=a?o.name+sl(a):o.name;
-        L.push({k:'prep',pic:o.pic,title:t,kicker:K+'・準備',dur:o.prepDur||8,guide:o.prepGuide(b,a),say:o.prepSay(a,b)});
+        L.push({k:'prep',pic:o.pic,title:t,kicker:K+'・準備',dur:o.prepDur||8,guide:o.prepGuide(b,a),say:o.prepSay(a,b),...(si===0?{nx}:{})});
         for(let s=1;s<=sets;s++){
           L.push({k:'hold',pic:o.pic,title:t,kicker:sets>1?`${K}・${s} セット目 / ${sets}`:K,dur:d,label:o.label||'キープ',guide:o.guide,say:'スタート',end:o.endSay});
-          if(s<sets)L.push({k:'rest',pic:o.pic,title:'休憩',kicker:'ひと息',dur:o.rest||20,guide:'楽な姿勢で深呼吸。',say:'休憩です。'});
+          if(s<sets)L.push({k:'rest',pic:o.pic,title:'休憩',kicker:'ひと息',dur:o.rest||20,guide:'楽な姿勢で深呼吸。',say:'休憩です。',nextSet:{name:t,s:s+1,cnt:fmt(d),cntSay:fmt(d)}});
         }
       });
     }};
@@ -638,12 +643,29 @@ function quickSteps(p){
   L.push({k:'prep',title:`${p.mins}分メニュー`,kicker:'準備',dur:10,guide:`${n}種目を${work}秒ずつ行います。あいだに${rest}秒、次の準備の時間があります。`,say:`${p.mins}分メニューを始めます。${work}秒ずつ、${n}種目です。`});
   items.forEach((e,i)=>{
     const o=e.src||{},pg=typeof o.prepGuide==='function'?o.prepGuide('左','右'):(o.prepGuide||''),sw=!!o.sides;
-    L.push({k:'rest',pic:e.pic,title:'次は '+e.name,kicker:`${i+1} / ${n}`,dur:rest,guide:pg+(sw?'　途中で左右を入れかえます。':''),say:`次は、${e.name}。`});
+    L.push({k:'rest',pic:e.pic,title:'次は '+e.name,kicker:`${i+1} / ${n}`,dur:rest,guide:pg+(sw?'　途中で左右を入れかえます。':''),next:`次のプログラム：${e.name}　${work}秒${sw?'（途中で左右を入れかえ）':''}`,say:`次のプログラムは、${e.name}、${work}秒です。${sw?'途中で左右を入れかえます。':''}`});
     L.push({k:'hold',pic:e.pic,title:e.name,kicker:`${i+1} / ${n}`,dur:work,label:o.label||'リズムよく',guide:o.guide||e.desc,say:'スタート',sw,end:i===n-1?'おわりです。':null});
   });
   return L;
 }
 const blocks=p=>p.menu==='both'?['base','belly']:[p.menu];
+/* 休憩中に「次のプログラムは ○○、14回、左右交互、2セットです」と案内する */
+function announce(L){
+  L.forEach((st,i)=>{
+    if(st.k!=='rest'||st.ann)return;
+    let say='',show='';
+    if(st.nextSet){const x=st.nextSet;show=`次：${x.name} ${x.s}セット目　${x.cnt}`;say=`次は、${x.name}の${x.s}セット目、${x.cntSay}です。`}
+    else{const nx=L.slice(i+1).find(t=>t.nx);if(nx){show=`次のプログラム：${nx.nx.name}　${nx.nx.cnt}`;say=`次のプログラムは、${nx.nx.name}、${nx.nx.cntSay}です。`}}
+    if(say){st.say=(st.say||'')+say;st.next=show;st.ann=1}
+  });
+  /* 種目が変わるときの準備でも、回数とセット数を先に案内する */
+  L.forEach(st=>{
+    if(st.k!=='prep'||!st.nx||st.ann)return;
+    const x=st.nx,rest=String(st.say||'').replace(/^[^。]*。/,m=>m.includes(x.name)?'':m);
+    st.say=`次のプログラムは、${x.name}、${x.cntSay}です。${rest}`;st.next=`次のプログラム：${x.name}　${x.cnt}`;st.dur+=4;st.ann=1;
+  });
+  return L;
+}
 function steps(p=cur()){
   if(isQuick(p))return quickSteps(p);
   const M=MENUS[p.tier],L=[];
@@ -651,7 +673,7 @@ function steps(p=cur()){
     if(bi>0)L.push({k:'rest',title:'休憩',kicker:'ひと息',dur:M.rest,guide:'深呼吸して、次はおなかメニューです。',say:'休憩です。次はおなかメニューです。'});
     exOf(p.tier,b,p.sex).forEach(e=>e.build(L,p.level,CAT[b]));
   });
-  return L;
+  return announce(L);
 }
 
 /* ---- home UI ---- */
@@ -734,7 +756,7 @@ function show(id){['home','run','fin','test'].forEach(x=>$(x).hidden=x!==id);win
 function enter(n){
   i=n;const s=L[i];t0=performance.now();lastRem=-1;lastPhase='';
   const pic=$('runPic');pic.parentNode.hidden=!s.pic;if(s.pic&&!pic.src.endsWith(s.pic+'.jpg'))pic.src=s.pic+'.jpg';
-  $('kicker').textContent=s.kicker;$('title').textContent=s.title;$('guide').textContent=s.guide;
+  $('kicker').textContent=s.kicker;$('title').textContent=s.title;$('guide').textContent=s.guide;$('nextLine').textContent=s.next||'';$('nextLine').hidden=!s.next;
   say(s.say);
 }
 function start(){
