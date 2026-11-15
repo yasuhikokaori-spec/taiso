@@ -280,7 +280,7 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
     <p class="kcline" id="kcLine"></p>
     <p class="nowtip" id="nowTip"></p>
     <button class="big" id="startBtn">はじめる</button>
-    <button class="ghost" id="camBtn">カメラで数える（スクワット・もも上げ・腕立て／試験版）</button>
+    <button class="ghost" id="camBtn">カメラで数える（スクワット・もも上げ・腕立て・ジャンピングジャック／試験版）</button>
     <button class="ghost" id="testBtn">声のテスト</button>
   </section>
 
@@ -350,11 +350,12 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
   <p class="hint">体力年齢の判定基準：中谷敏昭ら「30秒椅子立ち上がりテスト（CS-30テスト）成績の加齢変化と標準値の作成」臨床スポーツ医学 20(3), 2003／文部科学省「体力・運動能力調査」年齢別平均値（上体起こし）。判定は目安で、医学的な診断ではありません。持病のある方は、運動を始める前に医師に相談してください。</p>
   <section class="panel" aria-label="バージョン情報">
     <details class="guide-d">
-      <summary><h2>バージョン 2.8<small class="vdate">（2026年11月15日）</small></h2></summary>
+      <summary><h2>バージョン 2.9<small class="vdate">（2026年11月15日）</small></h2></summary>
       <div class="gd">
         <div class="tbl"><table>
           <thead><tr><th>版</th><th>日付</th><th>おもな変更</th></tr></thead>
           <tbody>
+            <tr><th>2.9</th><td>11/15</td><td>カメラで「ジャンピングジャック／ステップジャック」も数えられるように。起動後の待ち時間を10秒に</td></tr>
             <tr><th>2.8</th><td>11/15</td><td>カメラで「腕立て」（壁・椅子・ひざつき・腕立て伏せ）も数えられるように</td></tr>
             <tr><th>2.7</th><td>11/15</td><td>カメラ：回数の読み上げが途中で消えないように修正。もも上げで両足を同時に数えないように修正</td></tr>
             <tr><th>2.6</th><td>11/15</td><td>カメラで「もも上げ（座って・立って）」も数えられるように。左右それぞれの回数も表示</td></tr>
@@ -412,7 +413,7 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
     <h2 id="camTitle">カメラが数えます</h2>
   </div>
   <div class="panel" id="camSetup">
-    <div class="row"><label id="l-cex">種目</label><div class="seg" role="group" aria-labelledby="l-cex" id="camEx"><button data-v="squat">スクワット</button><button data-v="knee">もも上げ</button><button data-v="push">腕立て</button></div></div>
+    <div class="row"><label id="l-cex">種目</label><div class="seg" role="group" aria-labelledby="l-cex" id="camEx"><button data-v="squat">スクワット</button><button data-v="knee">もも上げ</button><button data-v="push">腕立て</button><button data-v="jack">ジャンピングジャック</button></div></div>
     <ol class="steps" id="camHow"></ol>
     <div class="row" id="camPosRow"><label id="l-cpos">姿勢</label><div class="seg" role="group" aria-labelledby="l-cpos" id="camPos"></div></div>
     <div class="row"><label id="l-cgoal">目標の回数</label><div class="seg" role="group" aria-labelledby="l-cgoal" id="camGoal"></div></div>
@@ -1485,14 +1486,16 @@ function countStep(c,lms,now){
   c.diagText=`下がり具合 ${drop.toFixed(2)}（しゃがみ判定 ${D.drop.toFixed(2)}以上／立ち判定 ${(D.drop*.4).toFixed(2)}以下）　物差し ${c.torso?'胴の長さ':'肩幅から推定'} ${S.toFixed(3)}`;
   return {ok:true,mode:'shoulder',drop,depthNow:Math.max(0,Math.min(1,drop/D.drop)),down:c.down,counted,msg:`【肩の高さで判定】${c.down?'立ち上がる':'しゃがむ'}`};
 }
-let camEx='squat',camPos='sit';const camPosBy={knee:'sit',push:'wall'};
+let camEx='squat',camPos='sit';const camPosBy={knee:'sit',push:'wall',jack:'step'};
 const CAMCFG={
  squat:{label:'スクワット',goals:[10,15,20,30],depthLabel:'しゃがむ深さ',depths:[['shallow','浅め（椅子スクワット）'],['normal','ふつう'],['deep','深め']],
-   how:['スマホやタブレットを、腰くらいの高さに立てかけます。','<b>肩の高さの上下</b>で数えます。肩から上が映っていれば、距離（1〜3m）や向き（正面・横）は自由です。座ったときに腰や足が画面から外れても大丈夫です。','立ったときに<b>腰まで</b>映ると、しゃがんだ深さをより正確に測れます。','「カメラを起動」を押したら、<b>6秒のあいだに位置について、まっすぐ立ちます</b>。「スタート」の声のあと、しゃがんで立ち上がるたびに1回と数えます。']},
+   how:['スマホやタブレットを、腰くらいの高さに立てかけます。','<b>肩の高さの上下</b>で数えます。肩から上が映っていれば、距離（1〜3m）や向き（正面・横）は自由です。座ったときに腰や足が画面から外れても大丈夫です。','立ったときに<b>腰まで</b>映ると、しゃがんだ深さをより正確に測れます。','「カメラを起動」を押したら、<b>10秒のあいだに位置について、まっすぐ立ちます</b>。「スタート」の声のあと、しゃがんで立ち上がるたびに1回と数えます。']},
  knee:{label:'もも上げ',posLabel:'姿勢',pos:[['sit','座って（座って膝上げ）'],['stand','立って（もも上げ）']],goals:[10,20,30,40],depthLabel:'ひざを上げる高さ',depths:[['low','低め'],['normal','ふつう'],['high','高め（太ももが床と平行）']],
-   how:['スマホやタブレットを、腰くらいの高さに立てかけます。','カメラの<b>正面</b>を向き、<b>肩・腰・ひざ</b>が映るようにします（1〜1.5mくらい）。足首は映らなくても大丈夫です。','<b>ひざの高さを腰と比べて</b>数えます。左右どちらの足も、1回上げるごとに1回です（左右交互に10回ずつなら20回）。','「カメラを起動」を押したら、<b>6秒のあいだに位置について</b>、座るか立つかして静かに待ちます。「スタート」の声のあとで始めます。']},
+   how:['スマホやタブレットを、腰くらいの高さに立てかけます。','カメラの<b>正面</b>を向き、<b>肩・腰・ひざ</b>が映るようにします（1〜1.5mくらい）。足首は映らなくても大丈夫です。','<b>ひざの高さを腰と比べて</b>数えます。左右どちらの足も、1回上げるごとに1回です（左右交互に10回ずつなら20回）。','「カメラを起動」を押したら、<b>10秒のあいだに位置について</b>、座るか立つかして静かに待ちます。「スタート」の声のあとで始めます。']},
  push:{label:'腕立て',posLabel:'種類',pos:[['wall','壁腕立て'],['chair','椅子腕立て'],['knee','ひざつき腕立て'],['floor','腕立て伏せ']],goals:[5,10,15,20],depthLabel:'ひじを曲げる深さ',depths:[['shallow','浅め'],['normal','ふつう'],['deep','深め']],
-   how:['スマホやタブレットを、<b>体の横</b>から映る位置に置きます（1〜2m）。床でする腕立ては、スマホを床に立てて横から映します。','<b>肩・ひじ・手首</b>が映るようにします。カメラに近い方の腕で判定します。','<b>ひじの曲がる角度</b>で数えます。ひじを曲げて、伸ばしたら1回です。','「カメラを起動」を押したら、<b>6秒のあいだに位置について、腕を伸ばした姿勢</b>で待ちます。「スタート」の声のあとで始めます。']}};
+   how:['スマホやタブレットを、<b>体の横</b>から映る位置に置きます（1〜2m）。床でする腕立ては、スマホを床に立てて横から映します。','<b>肩・ひじ・手首</b>が映るようにします。カメラに近い方の腕で判定します。','<b>ひじの曲がる角度</b>で数えます。ひじを曲げて、伸ばしたら1回です。','「カメラを起動」を押したら、<b>10秒のあいだに位置について、腕を伸ばした姿勢</b>で待ちます。「スタート」の声のあとで始めます。']},
+ jack:{label:'ジャンピングジャック',posLabel:'種類',pos:[['step','ステップジャック（跳ばない）'],['jump','ジャンピングジャック（跳ぶ）']],goals:[10,20,30,50],depthLabel:'腕を上げる高さ',depths:[['low','肩より上'],['normal','頭の高さ'],['high','頭の上で手を合わせる']],
+   how:['スマホやタブレットを、腰くらいの高さに立てかけます。','カメラの<b>正面</b>に、1.5〜2.5m離れて立ちます。<b>頭の上まで上げた手</b>と、肩・腰が映るようにします。','<b>両手の高さを肩と比べて</b>数えます。両手が上がって、下りたら1回です。','「カメラを起動」を押したら、<b>10秒のあいだに位置について、手を下ろして</b>待ちます。「スタート」の声のあとで始めます。']}};
 function camSetupUI(){
   const p=cur(),C=CAMCFG[camEx];
   $('camHow').innerHTML=C.how.map(x=>`<li>${x}</li>`).join('');
@@ -1501,6 +1504,7 @@ function camSetupUI(){
   $('camDepth').innerHTML=C.depths.map(([v,t])=>`<button data-v="${v}">${t}</button>`).join('');
   $('l-cdep').textContent=C.depthLabel;
   if(camEx==='push'&&!camPosBy._set){camPosBy.push=+p.tier>=60?'wall':(p.sex==='f'||+p.tier>=50)?'knee':'floor';camPosBy._set=1}
+  if(camEx==='jack'&&!camPosBy._jset){camPosBy.jack=+p.tier>=40?'step':'jump';camPosBy._jset=1}
   if(C.pos)camPos=camPosBy[camEx];
   if(!C.depths.some(d=>d[0]===camDepth))camDepth=defDepth();
   $('camPosRow').hidden=!C.pos;
@@ -1513,7 +1517,7 @@ function camSetupUI(){
   show('cam');
 }
 $('camEx').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(camEx!==b.dataset.v){camEx=b.dataset.v;camDepth='';camGoal=0}camSetupUI()});
-function defDepth(){const p=cur();return camEx==='squat'?(+p.tier>=60?'shallow':'normal'):camEx==='knee'?(camPos==='sit'?'low':'normal'):(['wall','chair'].includes(camPos)?'shallow':'normal')}
+function defDepth(){const p=cur();if(camEx==='jack')return camPos==='step'&&+p.tier>=60?'low':'normal';return camEx==='squat'?(+p.tier>=60?'shallow':'normal'):camEx==='knee'?(camPos==='sit'?'low':'normal'):(['wall','chair'].includes(camPos)?'shallow':'normal')}
 /* ---- もも上げ：左右のひざの高さを、それぞれ腰と比べて数える ----
    物差しは胴の長さ（肩〜腰）。座っても立っても映る範囲なので、同じ方法で判定できる。
    各足の「下ろした位置」は、その足を上げていないあいだの直近4秒で決める。上げた瞬間に1回と数える。
@@ -1564,8 +1568,31 @@ function pushStep(c,lms,now){
   c.diagText=`ひじの角度 ${Math.round(A)}°（曲げた判定 ${T}°以下／伸ばした判定 150°以上）　${c.side===L?'左':'右'}腕で判定`;
   return {ok:true,depthNow:Math.max(0,Math.min(1,(170-A)/(170-T))),counted,msg:c.down?'伸ばす':'ひじを曲げる'};
 }
-const makeCounter=()=>camEx==='knee'?newKnee(camDepth):camEx==='push'?newPush(camDepth):newCounter(camDepth);
-const camStepFn=(c,l,t)=>camEx==='knee'?kneeStep(c,l,t):camEx==='push'?pushStep(c,l,t):countStep(c,l,t);
+const makeCounter=()=>camEx==='knee'?newKnee(camDepth):camEx==='push'?newPush(camDepth):camEx==='jack'?newJack(camDepth):newCounter(camDepth);
+const camStepFn=(c,l,t)=>camEx==='knee'?kneeStep(c,l,t):camEx==='push'?pushStep(c,l,t):camEx==='jack'?jackStep(c,l,t):countStep(c,l,t);
+/* ---- ジャンピングジャック／ステップジャック：両手首の高さを肩と比べる。両手が上がって、下りたら1回 ----
+   物差しは胴の長さ（手を下ろして立っているときに測る。腰が見えなければ肩幅から推定）。
+   跳んでも体全体が上下するだけで、肩との差は変わらない。動きが速いので、確認は2コマ・間隔は0.45秒 */
+const JDEPTH={low:.1,normal:.35,high:.55};
+function newJack(depth){return {n:0,up:false,cand:0,upT:0,first:0,last:0,depth,hist:[],torso:null}}
+function jackStep(c,lms,now){
+  const v=k=>lms[k]?(lms[k].visibility??1):0,vs=ix=>ix.reduce((a,k)=>a+v(k),0)/ix.length;
+  if(vs([11,12])<.5)return {ok:false,msg:'肩が映るようにしてください'};
+  if(vs([15,16])<.3)return {ok:false,msg:'手が見えません。手を上げても画面に入るように、少し下がってください'};
+  const shY=(lms[11].y+lms[12].y)/2;
+  if(!c.up&&vs([23,24])>=.5){const t=(lms[23].y+lms[24].y)/2-shY;if(t>.03)c.torso=c.torso==null?t:c.torso*.9+t*.1}
+  const S=c.torso||Math.hypot(lms[11].x-lms[12].x,lms[11].y-lms[12].y)*1.6;if(!(S>.02))return {ok:false,msg:'もう少し近づいてください'};
+  /* 両手のうち低い方で判定（片手だけ上げても数えない） */
+  const rel=Math.min((lms[11].y-lms[15].y)/S,(lms[12].y-lms[16].y)/S);
+  c.hist.push(rel);if(c.hist.length>3)c.hist.shift();
+  const r=med(c.hist),T=JDEPTH[c.depth];
+  if(c.up&&now-c.upT>6000){c.up=false;c.cand=0}
+  let counted=false;
+  if(!c.up){c.cand=r>T?c.cand+1:Math.max(0,c.cand-1);if(c.cand>=2){c.up=true;c.cand=0;c.upT=now;if(!c.first)c.first=now}}
+  else{c.cand=r<-.25?c.cand+1:Math.max(0,c.cand-1);if(c.cand>=2){c.up=false;c.cand=0;if(now-c.upT>=120&&now-c.last>=450){c.n++;c.last=now;counted=true}}}
+  c.diagText=`手の高さ ${r.toFixed(2)}（上げた判定 ${T.toFixed(2)}以上／下ろした判定 −0.25以下）`;
+  return {ok:true,depthNow:Math.max(0,Math.min(1,(r+.8)/(T+.8))),counted,msg:c.up?'下ろす':'両手を上げる'};
+}
 const PUSHNAME={wall:'壁腕立て',chair:'椅子腕立て',knee:'ひざつき腕立て',floor:'腕立て伏せ'};
 function camErr(t){$('camErr').textContent=t;$('camErr').hidden=false;$('camSetup').hidden=false;$('camLive').hidden=true}
 async function camOpen(){
@@ -1591,8 +1618,8 @@ async function camStartFn(){
       e&&e.name==='NotFoundError'?'カメラが見つかりませんでした。':'カメラか、画像を見分ける仕組みを読み込めませんでした。インターネットにつながっているか確かめてください。');return;
   }
   $('camStart').disabled=false;$('camStart').textContent='カメラを起動';
-  camSt=makeCounter();camSt.readyAt=performance.now()+6000;camSt.cd=-1;$('camSetup').hidden=true;$('camLive').hidden=false;$('camN').textContent='0';$('camOf').textContent=`/ ${camGoal}回`;
-  $('camLine').style.left='100%';wake();say(`位置についてください。6秒後に数え始めます。${CAMCFG[camEx].label}、目標は${camGoal}回です。`);
+  camSt=makeCounter();camSt.readyAt=performance.now()+10000;camSt.cd=-1;$('camSetup').hidden=true;$('camLive').hidden=false;$('camN').textContent='0';$('camOf').textContent=`/ ${camGoal}回`;
+  $('camLine').style.left='100%';wake();say(`位置についてください。10秒後に数え始めます。${CAMCFG[camEx].label}、目標は${camGoal}回です。`);
   camLoop();
 }
 function camLoop(){
@@ -1608,8 +1635,8 @@ function camLoop(){
     drawPose(ctx,lms,cv.width,cv.height);
     const nowT=performance.now();
     if(camSt.readyAt){const left=Math.ceil((camSt.readyAt-nowT)/1000);
-      if(left>0){$('camState').textContent=`位置について、${camEx==='knee'?(camPos==='sit'?'座って':'立って'):camEx==='push'?'腕を伸ばした姿勢で':'まっすぐ立って'}待ってください… ${left}`;if(left<=3&&left!==camSt.cd){camSt.cd=left;say(String(left))}return}
-      camSt=makeCounter();say(camEx==='knee'?'スタート。左右交互に、ひざを上げてください。':camEx==='push'?'スタート。ひじを曲げて、伸ばしてください。':'スタート。しゃがんでください。')}
+      if(left>0){$('camState').textContent=`位置について、${camEx==='knee'?(camPos==='sit'?'座って':'立って'):camEx==='push'?'腕を伸ばした姿勢で':camEx==='jack'?'手を下ろして':'まっすぐ立って'}待ってください… ${left}`;if(left<=3&&left!==camSt.cd){camSt.cd=left;say(String(left))}return}
+      camSt=makeCounter();say(camEx==='knee'?'スタート。左右交互に、ひざを上げてください。':camEx==='push'?'スタート。ひじを曲げて、伸ばしてください。':camEx==='jack'?'スタート。両手を上げて、下ろしてください。':'スタート。しゃがんでください。')}
     const r=camStepFn(camSt,lms,nowT);
     $('camState').textContent=r.msg;if(!r.ok)return;
     $('camBar').style.width=(r.depthNow*100)+'%';
@@ -1630,8 +1657,8 @@ function camFinish(){
   if(!c||c.n<1){say('数えた回数がないので、記録しませんでした。');paint();show('home');return}
   const p=cur(),key=dkey(new Date()),now=Date.now();
   const sec=Math.max(10,Math.round(((c.last||now)-(c.first||now))/1000)+3),kg=kgOf(p);
-  const met=ex==='knee'?(camPos==='sit'?2.8:3.5):ex==='push'?(camPos==='wall'?3.5:3.8):DEPTH[c.depth].met;
-  const name=ex==='knee'?(camPos==='sit'?'座って膝上げ':'もも上げ'):ex==='push'?PUSHNAME[camPos]:'スクワット';
+  const met=ex==='knee'?(camPos==='sit'?2.8:3.5):ex==='push'?(camPos==='wall'?3.5:3.8):ex==='jack'?(camPos==='jump'?8:4.5):DEPTH[c.depth].met;
+  const name=ex==='knee'?(camPos==='sit'?'座って膝上げ':'もも上げ'):ex==='push'?PUSHNAME[camPos]:ex==='jack'?(camPos==='jump'?'ジャンピングジャック':'ステップジャック'):'スクワット';
   const kc=Math.round(1.05*(met-1)*sec/3600*kg*10)/10,pt=ptsOf(p.tier,'both','normal',String(sec/60));
   const days=recs[p.id]||(recs[p.id]=[]);if(!days.includes(key))days.push(key);
   (logs[p.id]||(logs[p.id]=[])).push({d:key,tier:p.tier,menu:'camera',level:'normal',pts:pt,t:now,kg,kc,sec,reps:c.n,ex});
