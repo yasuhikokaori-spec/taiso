@@ -350,11 +350,12 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
   <p class="hint">体力年齢の判定基準：中谷敏昭ら「30秒椅子立ち上がりテスト（CS-30テスト）成績の加齢変化と標準値の作成」臨床スポーツ医学 20(3), 2003／文部科学省「体力・運動能力調査」年齢別平均値（上体起こし）。判定は目安で、医学的な診断ではありません。持病のある方は、運動を始める前に医師に相談してください。</p>
   <section class="panel" aria-label="バージョン情報">
     <details class="guide-d">
-      <summary><h2>バージョン 2.6<small class="vdate">（2026年11月15日）</small></h2></summary>
+      <summary><h2>バージョン 2.7<small class="vdate">（2026年11月15日）</small></h2></summary>
       <div class="gd">
         <div class="tbl"><table>
           <thead><tr><th>版</th><th>日付</th><th>おもな変更</th></tr></thead>
           <tbody>
+            <tr><th>2.7</th><td>11/15</td><td>カメラ：回数の読み上げが途中で消えないように修正。もも上げで両足を同時に数えないように修正</td></tr>
             <tr><th>2.6</th><td>11/15</td><td>カメラで「もも上げ（座って・立って）」も数えられるように。左右それぞれの回数も表示</td></tr>
             <tr><th>2.5</th><td>11/15</td><td>カメラ：起動してから位置につくまで6秒待つ。立った位置の基準を直近4秒の高さから決め、しゃがんだまま6秒たったら取り直す（1.5m以上離れると数えなかった不具合を修正）。下がり具合の数値を画面に表示</td></tr>
             <tr><th>2.4</th><td>11/15</td><td>カメラ：距離や姿勢に関係なく、いつも肩の高さで判定するように統一（全身⇔上半身の切りかえをなくした）</td></tr>
@@ -481,6 +482,12 @@ function say(t){
   if(!('speechSynthesis' in window)||!t)return;
   speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(t);u.lang='ja-JP';u.rate=.9;if(jaVoice)u.voice=jaVoice;
+  speechSynthesis.speak(u);
+}
+/* カメラの回数読み上げ用：前の数字を打ち切らずに続けて読む（素早く2回数えても「11、12」と両方言う） */
+function sayCount(t){
+  if(!('speechSynthesis' in window)||!t)return;
+  const u=new SpeechSynthesisUtterance(t);u.lang='ja-JP';u.rate=1.2;if(jaVoice)u.voice=jaVoice;
   speechSynthesis.speak(u);
 }
 
@@ -1502,7 +1509,8 @@ $('camEx').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(camEx!==b.dat
 $('camPos').querySelectorAll('button').forEach(b=>b.onclick=()=>{camPos=b.dataset.v;camDepth=camPos==='sit'?'low':'normal';press($('camPos'),camPos);press($('camDepth'),camDepth)});
 /* ---- もも上げ：左右のひざの高さを、それぞれ腰と比べて数える ----
    物差しは胴の長さ（肩〜腰）。座っても立っても映る範囲なので、同じ方法で判定できる。
-   各足の「下ろした位置」は、その足を上げていないあいだの直近4秒で決める。上げた瞬間に1回と数える */
+   各足の「下ろした位置」は、その足を上げていないあいだの直近4秒で決める。上げた瞬間に1回と数える。
+   二重カウント防止：反対の足のほうが高く上がっているとき（体が傾いて両ひざが上がって見えるとき）と、直前の1回から0.25秒以内は数えない */
 const KDEPTH={low:.22,normal:.38,high:.55};
 function newKnee(depth){const leg=()=>({up:false,cand:0,upT:0,last:0,win:[],base:null,hist:[],lift:0});return {n:0,l:0,r:0,depth,torso:null,first:0,last:0,legs:[leg(),leg()]}}
 function kneeStep(c,lms,now){
@@ -1522,7 +1530,7 @@ function kneeStep(c,lms,now){
     if(g.up&&now-g.upT>6000){g.up=false;g.cand=0;g.win=[[now,r]];g.base=r}
     const lift=Math.max(0,g.base-r);g.lift=lift;maxLift=Math.max(maxLift,lift);
     if(!g.up){g.cand=lift>T?g.cand+1:Math.max(0,g.cand-1);
-      if(g.cand>=3){g.up=true;g.cand=0;g.upT=now;if(now-g.last>=400){g.last=now;c.n++;i?c.r++:c.l++;if(!c.first)c.first=now;c.last=now;counted=name}}}
+      if(g.cand>=3){g.up=true;g.cand=0;g.upT=now;const o=c.legs[1-i];if(now-g.last>=400&&now-c.last>=250&&lift>o.lift){g.last=now;c.n++;i?c.r++:c.l++;if(!c.first)c.first=now;c.last=now;counted=name}}}
     else{g.cand=lift<T*.4?g.cand+1:Math.max(0,g.cand-1);if(g.cand>=3){g.up=false;g.cand=0}}
   });
   c.diagText=`上がり具合　左 ${c.legs[0].lift.toFixed(2)}・右 ${c.legs[1].lift.toFixed(2)}（1回と数える高さ ${T.toFixed(2)}以上）　左 ${c.l}回・右 ${c.r}回`;
@@ -1577,7 +1585,7 @@ function camLoop(){
     $('camState').textContent=r.msg;if(!r.ok)return;
     $('camBar').style.width=(r.depthNow*100)+'%';
     $('camDiag').textContent=camSt.diagText||'';
-    if(r.counted){$('camN').textContent=camSt.n;say(camSt.n>=camGoal&&camSt.n===camGoal?`${camSt.n}。目標達成です！`:String(camSt.n))}
+    if(r.counted){$('camN').textContent=camSt.n;sayCount(camSt.n>=camGoal&&camSt.n===camGoal?`${camSt.n}。目標達成です！`:String(camSt.n))}
   };
   run();
 }
