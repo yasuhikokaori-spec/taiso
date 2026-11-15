@@ -156,6 +156,15 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
 .ctrl .skipb{grid-column:1/-1}
 .resume{display:flex;flex-direction:column;gap:10px;background:var(--surface);border:2px solid var(--warm);border-radius:16px;padding:16px;text-align:center}
 .resume p{margin:0;font-weight:700}
+.camview{position:relative;width:100%;max-width:100%;aspect-ratio:3/4;background:#000;border-radius:16px;overflow:hidden}
+.camview video,.camview canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.camview.mirror video,.camview.mirror canvas{transform:scaleX(-1)}
+.camcount{position:absolute;right:12px;top:12px;background:rgba(0,0,0,.55);color:#fff;border-radius:14px;padding:6px 14px;display:flex;align-items:baseline;gap:6px}
+.camcount b{font:900 3.4rem var(--f-display);line-height:1;font-variant-numeric:tabular-nums}
+.camcount span{font-size:1.1rem}
+.cammeter{position:relative;height:18px;border-radius:9px;background:var(--track);overflow:hidden}
+.cammeter i{position:absolute;inset:0 auto 0 0;width:0;background:var(--accent);transition:width .1s linear}
+.cammeter span{position:absolute;top:0;bottom:0;width:3px;background:var(--warm)}
 .nextline{font-family:var(--f-display);font-weight:700;font-size:1.2rem;color:var(--accent);border-left:4px solid var(--accent);padding-left:12px;margin:0}
 .kcline{background:var(--bg);border-radius:12px;padding:10px 14px}
 .kcline b{font-family:var(--f-display);font-size:1.25rem;color:var(--warm)}
@@ -270,6 +279,7 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
     <p class="kcline" id="kcLine"></p>
     <p class="nowtip" id="nowTip"></p>
     <button class="big" id="startBtn">はじめる</button>
+    <button class="ghost" id="camBtn">カメラでスクワットを数える（試験版）</button>
     <button class="ghost" id="testBtn">声のテスト</button>
   </section>
 
@@ -339,11 +349,12 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
   <p class="hint">体力年齢の判定基準：中谷敏昭ら「30秒椅子立ち上がりテスト（CS-30テスト）成績の加齢変化と標準値の作成」臨床スポーツ医学 20(3), 2003／文部科学省「体力・運動能力調査」年齢別平均値（上体起こし）。判定は目安で、医学的な診断ではありません。持病のある方は、運動を始める前に医師に相談してください。</p>
   <section class="panel" aria-label="バージョン情報">
     <details class="guide-d">
-      <summary><h2>バージョン 2.0<small class="vdate">（2026年11月15日）</small></h2></summary>
+      <summary><h2>バージョン 2.1<small class="vdate">（2026年11月15日）</small></h2></summary>
       <div class="gd">
         <div class="tbl"><table>
           <thead><tr><th>版</th><th>日付</th><th>おもな変更</th></tr></thead>
           <tbody>
+            <tr><th>2.1</th><td>11/15</td><td>カメラでスクワットを自動で数える（試験版）。座って足伸ばし・椅子腕立てのイラスト</td></tr>
             <tr><th>2.0</th><td>11/15</td><td>電話などで画面がかくれたら自動で一時停止し「続きから再開」。途中でやめても実施分を記録。過去の消費カロリーを記録時の値で固定。「この種目を飛ばす」ボタン。④ 椅子中心・⑤ ジャンプなしメニュー</td></tr>
             <tr><th>1.9</th><td>11/15</td><td>休憩中と種目が変わる前の準備で、「次のプログラムは ○○、14回（左右交互）×2セットです」と声と画面で案内</td></tr>
             <tr><th>1.8</th><td>11/13</td><td>性別を「女性」にした人に、ひざつき腕立て・かかと落とし・骨盤底筋トレを自動で追加</td></tr>
@@ -384,6 +395,33 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
     <button class="big" id="pauseBtn">一時停止</button>
     <button class="ghost" id="stopBtn">やめる</button>
     <button class="ghost skipb" id="skipBtn">この種目を飛ばす</button>
+  </div>
+</div>
+
+<div class="wrap" id="cam" hidden>
+  <div class="stage">
+    <span class="kicker">カメラでスクワット（試験版）</span>
+    <h2 id="camTitle">カメラが数えます</h2>
+  </div>
+  <div class="panel" id="camSetup">
+    <ol class="steps">
+      <li>スマホやタブレットを、腰くらいの高さに立てかけます。</li>
+      <li>2〜3m離れて、<b>頭から足先まで全身</b>が映るように立ちます。<b>体の横</b>がカメラに向くと正確です。</li>
+      <li>しゃがんで、立ち上がるたびに1回と数えます。</li>
+    </ol>
+    <div class="row"><label id="l-cgoal">目標の回数</label><div class="seg" role="group" aria-labelledby="l-cgoal" id="camGoal"><button data-v="10">10回</button><button data-v="15">15回</button><button data-v="20">20回</button><button data-v="30">30回</button></div></div>
+    <div class="row"><label id="l-cdep">しゃがむ深さ</label><div class="seg" role="group" aria-labelledby="l-cdep" id="camDepth"><button data-v="shallow">浅め（椅子スクワット）</button><button data-v="normal">ふつう</button><button data-v="deep">深め</button></div></div>
+    <p class="hint">映像はこの端末の中だけで処理し、どこにも送りません。最初の1回は、画像を見分ける仕組み（約10MB）を読み込むため、インターネットが必要です。</p>
+    <button class="big" id="camStart">カメラを起動</button>
+    <button class="ghost" id="camBack">もどる</button>
+    <p class="skip" id="camErr" hidden></p>
+  </div>
+  <div id="camLive" hidden style="display:flex;flex-direction:column;gap:12px">
+    <div class="camview"><video id="camVideo" playsinline muted></video><canvas id="camCanvas"></canvas>
+      <div class="camcount"><b id="camN">0</b><span id="camOf">/ 10回</span></div></div>
+    <div class="cammeter" aria-hidden="true"><i id="camBar"></i><span id="camLine"></span></div>
+    <p class="phase" id="camState" aria-live="polite">準備中…</p>
+    <div class="ctrl"><button class="big" id="camDone">終了して記録</button><button class="ghost" id="camFlip">カメラ切替</button><button class="ghost skipb" id="camQuit">記録しないでやめる</button></div>
   </div>
 </div>
 
@@ -634,13 +672,13 @@ const pelvic=reps=>R({name:'骨盤底筋トレ',reps,desc:'おしっこを途中
 /* ---- ④ 椅子中心：椅子に座る・椅子につかまる種目だけ。床に寝ない ---- */
 const chairSquat=(reps,sets)=>R({...MENUS['70'].base[0].src,reps,sets});
 const seatedKnee=reps=>R({...MENUS['70'].belly[1].src,reps});
-const legExt=reps=>R({name:'座って足伸ばし',reps,alt:true,desc:'椅子に座ったまま、ひざを伸ばして足を前に上げ、2秒キープ。太ももの前を鍛えます。',
-  prepGuide:'椅子に深く腰掛け、座面の横を手で持ちます。',prepSay:'座って足伸ばしです。椅子に深く腰掛けて、座面の横を持ちましょう。',
+const legExt=reps=>R({name:'座って足伸ばし',pic:'legext',reps,alt:true,desc:'椅子に座ったまま、ひざを伸ばして足を前に上げ、2秒キープ。太ももの前を鍛えます。',
+  prepGuide:'椅子に座って背すじを伸ばし、手は太ももに置きます。両足は床につけます。',prepSay:'座って足伸ばしです。背すじを伸ばして、手は太ももに置きましょう。',
   ph:[{d:2,label:'右ひざを伸ばす',g:'up'},{d:2,label:'キープ',g:'hold'},{d:2,label:'ゆっくり下ろす',g:'down'},{d:2,label:'左ひざを伸ばす',g:'up',say:'左'},{d:2,label:'キープ',g:'hold'},{d:2,label:'ゆっくり下ろす',g:'down'}],
-  guide:'つま先を天井に向けて。背もたれに寄りかからないように。',sayRep:r=>`${r}、右`});
-const chairPush=(reps,sets)=>R({name:'椅子腕立て',pic:'wallpush',reps,sets,rest:30,desc:'壁につけた動かない椅子の座面に両手をついて腕立て。壁腕立てより少しきつめです。',
+  guide:'片方の足をゆっくり前に伸ばし、つま先を自分の方へ向けます。太ももの前側を意識して。痛みがあるときは無理をしないでください。',sayRep:r=>`${r}、右`});
+const chairPush=(reps,sets)=>R({name:'椅子腕立て',pic:'chairpush',reps,sets,rest:30,desc:'壁につけた動かない椅子の座面に両手をついて腕立て。壁腕立てより少しきつめです。',
   prepGuide:'椅子を壁につけて動かないようにし、座面の両端に手をつきます。体は一直線に。',prepSay:'椅子腕立てです。壁につけた椅子の座面に、両手をつきましょう。',
-  ph:PD(2,1.5,'ひじを曲げて胸を座面に近づける','押してもどる'),guide:'頭からかかとまで一直線。椅子が動かないか確かめてから行います。'});
+  ph:PD(2,1.5,'吸いながら胸を椅子に近づける','吐きながら押し上げる'),guide:'体は一直線に、腰を反らせない。椅子が滑らないよう、壁際などで固定してから行います。'});
 const seatDraw=h=>drawin(h,'椅子に座り、手を太ももの上に置いて');
 const CHAIR={
  '70':[chairSquat(10,2),legExt(8),heelRaise(10,true),balance(20,true),seatedKnee(10),altTwist(false),seatDraw(10)],
@@ -799,7 +837,7 @@ const total=()=>L.reduce((a,s)=>a+s.dur,0);
 const before=n=>L.slice(0,n).reduce((a,s)=>a+s.dur,0);
 async function wake(){try{if(lock)return;lock=await navigator.wakeLock.request('screen');lock.addEventListener('release',()=>{lock=null})}catch(e){lock=null}}
 function unwake(){try{lock&&lock.release()}catch(e){}lock=null}
-function show(id){['home','run','fin','test'].forEach(x=>$(x).hidden=x!==id);window.scrollTo(0,0);if(id==='home'&&pendingRemote){const d=pendingRemote;pendingRemote=null;applyState(mergeDocs(packState(),d))}}
+function show(id){['home','run','fin','test','cam'].forEach(x=>$(x).hidden=x!==id);window.scrollTo(0,0);if(id==='home'&&pendingRemote){const d=pendingRemote;pendingRemote=null;applyState(mergeDocs(packState(),d))}}
 const running=()=>!$('run').hidden&&timer!==null;
 const stepEl=()=>paused?pausedEl/1000:(performance.now()-t0)/1000;
 function enter(n){
@@ -1393,6 +1431,114 @@ function profile(pid){
 }
 $('profBtn').onclick=()=>profile(cur().id);
 
+/* ---- camera squat counter（MediaPipe Pose を端末内で実行） ----
+   ひざの角度（腰・ひざ・足首）と、立った姿勢からの腰の下がり具合の両方で「しゃがんだ」を判定し、立ち上がったら1回。 */
+const MP_VER='0.10.14',MP_URL=`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VER}`;
+const MP_MODEL='https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
+const DEPTH={shallow:{ang:130,drop:.22,met:3.5},normal:{ang:110,drop:.38,met:5},deep:{ang:95,drop:.55,met:5}};
+let camGoal=10,camDepth='normal',camFacing='user',camStream=null,camLm=null,camRaf=0,camSt=null;
+function angleAt(a,b,c){const v1=[a.x-b.x,a.y-b.y],v2=[c.x-b.x,c.y-b.y];const d=(v1[0]*v2[0]+v1[1]*v2[1])/((Math.hypot(...v1)*Math.hypot(...v2))||1);return Math.acos(Math.max(-1,Math.min(1,d)))*180/Math.PI}
+/* 1フレームぶんの関節位置から、回数を数える（カメラなしでも試せるよう、ここだけ独立） */
+function newCounter(depth){return {n:0,down:false,base:null,hist:[],depth,first:0,last:0}}
+function countStep(c,lms,now){
+  const L=[23,25,27],Rr=[24,26,28],vis=ix=>ix.reduce((a,k)=>a+(lms[k].visibility??1),0)/3;
+  const side=vis(L)>=vis(Rr)?L:Rr;if(vis(side)<.5)return {ok:false,msg:'全身が映るように、少し下がってください'};
+  const [h,k,a]=side.map(ix=>lms[ix]);
+  c.hist.push(angleAt(h,k,a));if(c.hist.length>4)c.hist.shift();
+  const ang=c.hist.reduce((x,y)=>x+y,0)/c.hist.length,thigh=Math.hypot(h.x-k.x,h.y-k.y)||.1;
+  if(ang>160)c.base=c.base==null?h.y:c.base*.9+h.y*.1;
+  const drop=c.base==null?0:Math.max(0,(h.y-c.base)/thigh),D=DEPTH[c.depth];
+  const depthNow=Math.max(Math.min(1,(170-ang)/(170-D.ang)),Math.min(1,drop/D.drop));
+  let counted=false;
+  if(!c.down&&(ang<D.ang||drop>D.drop)){c.down=true;if(!c.first)c.first=now}
+  else if(c.down&&ang>155&&drop<D.drop*.4){c.down=false;c.n++;c.last=now;counted=true}
+  return {ok:true,ang,drop,depthNow:Math.max(0,depthNow),down:c.down,counted,msg:c.down?'立ち上がる':'しゃがむ'};
+}
+function camSetupUI(){
+  const p=cur();camDepth=+p.tier>=60?'shallow':'normal';
+  press($('camGoal'),String(camGoal));press($('camDepth'),camDepth);
+  $('camSetup').hidden=false;$('camLive').hidden=true;$('camErr').hidden=true;$('camTitle').textContent=`${p.name}さんのスクワットを数えます`;
+  show('cam');
+}
+$('camGoal').querySelectorAll('button').forEach(b=>b.onclick=()=>{camGoal=+b.dataset.v;press($('camGoal'),b.dataset.v)});
+$('camDepth').querySelectorAll('button').forEach(b=>b.onclick=()=>{camDepth=b.dataset.v;press($('camDepth'),camDepth)});
+function camErr(t){$('camErr').textContent=t;$('camErr').hidden=false;$('camSetup').hidden=false;$('camLive').hidden=true}
+async function camOpen(){
+  if(camStream)camStream.getTracks().forEach(t=>t.stop());
+  camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:camFacing,width:{ideal:640},height:{ideal:480}},audio:false});
+  const v=$('camVideo');v.srcObject=camStream;await v.play();
+  v.parentNode.classList.toggle('mirror',camFacing==='user');
+}
+async function camStartFn(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){camErr('このブラウザではカメラを使えません。スマホの Chrome か Safari で、GitHub 版のアドレスから開いてください。');return}
+  $('camStart').disabled=true;$('camStart').textContent='読み込み中…（初回は少し時間がかかります）';
+  try{
+    if(!camLm){
+      const vision=await import(`${MP_URL}/vision_bundle.mjs`);
+      const fs=await vision.FilesetResolver.forVisionTasks(`${MP_URL}/wasm`);
+      const opt=d=>({baseOptions:{modelAssetPath:MP_MODEL,delegate:d},runningMode:'VIDEO',numPoses:1});
+      try{camLm=await vision.PoseLandmarker.createFromOptions(fs,opt('GPU'))}catch(e){camLm=await vision.PoseLandmarker.createFromOptions(fs,opt('CPU'))}
+    }
+    await camOpen();
+  }catch(e){
+    $('camStart').disabled=false;$('camStart').textContent='カメラを起動';
+    camErr(e&&e.name==='NotAllowedError'?'カメラの使用が許可されませんでした。ブラウザのアドレス欄の左のマークから、カメラを「許可」にしてください。':
+      e&&e.name==='NotFoundError'?'カメラが見つかりませんでした。':'カメラか、画像を見分ける仕組みを読み込めませんでした。インターネットにつながっているか確かめてください。');return;
+  }
+  $('camStart').disabled=false;$('camStart').textContent='カメラを起動';
+  camSt=newCounter(camDepth);$('camSetup').hidden=true;$('camLive').hidden=false;$('camN').textContent='0';$('camOf').textContent=`/ ${camGoal}回`;
+  $('camLine').style.left='100%';wake();say(`カメラで数えます。全身が映るように立って、しゃがんでください。目標は${camGoal}回です。`);
+  camLoop();
+}
+function camLoop(){
+  const v=$('camVideo'),cv=$('camCanvas'),ctx=cv.getContext('2d');let lastT=-1;
+  const run=()=>{
+    camRaf=requestAnimationFrame(run);
+    if(document.visibilityState!=='visible'||!camLm||v.readyState<2||v.currentTime===lastT)return;
+    lastT=v.currentTime;
+    if(cv.width!==v.videoWidth){cv.width=v.videoWidth;cv.height=v.videoHeight}
+    const res=camLm.detectForVideo(v,performance.now());ctx.clearRect(0,0,cv.width,cv.height);
+    const lms=res.landmarks&&res.landmarks[0];
+    if(!lms){$('camState').textContent='人が見つかりません。全身が映るように立ってください';return}
+    drawPose(ctx,lms,cv.width,cv.height);
+    const r=countStep(camSt,lms,performance.now());
+    $('camState').textContent=r.msg;if(!r.ok)return;
+    $('camBar').style.width=(r.depthNow*100)+'%';
+    if(r.counted){$('camN').textContent=camSt.n;say(camSt.n>=camGoal&&camSt.n===camGoal?`${camSt.n}。目標達成です！`:String(camSt.n))}
+  };
+  run();
+}
+function drawPose(ctx,l,w,h){
+  const E=[[11,12],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28],[11,13],[13,15],[12,14],[14,16]];
+  ctx.lineWidth=Math.max(3,w/120);ctx.strokeStyle='rgba(76,196,154,.9)';ctx.fillStyle='#e8964f';
+  E.forEach(([a,b])=>{if((l[a].visibility??1)<.4||(l[b].visibility??1)<.4)return;ctx.beginPath();ctx.moveTo(l[a].x*w,l[a].y*h);ctx.lineTo(l[b].x*w,l[b].y*h);ctx.stroke()});
+  [23,24,25,26,27,28].forEach(k=>{if((l[k].visibility??1)<.4)return;ctx.beginPath();ctx.arc(l[k].x*w,l[k].y*h,Math.max(5,w/80),0,7);ctx.fill()});
+}
+function camStop(){cancelAnimationFrame(camRaf);camRaf=0;if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}unwake()}
+function camFinish(){
+  const c=camSt;camStop();
+  if(!c||c.n<1){say('数えた回数がないので、記録しませんでした。');paint();show('home');return}
+  const p=cur(),key=dkey(new Date()),now=Date.now();
+  const sec=Math.max(10,Math.round(((c.last||now)-(c.first||now))/1000)+3),D=DEPTH[c.depth],kg=kgOf(p);
+  const kc=Math.round(1.05*(D.met-1)*sec/3600*kg*10)/10,pt=ptsOf(p.tier,'both','normal',String(sec/60));
+  const days=recs[p.id]||(recs[p.id]=[]);if(!days.includes(key))days.push(key);
+  (logs[p.id]||(logs[p.id]=[])).push({d:key,tier:p.tier,menu:'camera',level:'normal',pts:pt,t:now,kg,kc,sec,reps:c.n});
+  store.set('kt-recs',recs);saveG();
+  const td=dayKcal(p.id,key),goal=c.n>=camGoal;
+  say(`${p.name}さん、おつかれさまでした。スクワット${c.n}回。${goal?'目標達成です。':''}約${Math.round(kc)}キロカロリー消費しました。${treatSay(td)}`);
+  $('finTitle').textContent=`${p.name}さん、おつかれさまでした`;
+  $('finText').textContent=`カメラでスクワット ${c.n}回（目標 ${camGoal}回${goal?'・達成！':''}）　${mmss(sec)}`;
+  $('finKcal').innerHTML=`<div class="kc"><b>${esc(p.name)}さん</b><span>今回 約<strong>${Math.round(kc)}</strong>kcal　今日の合計 約<strong>${Math.round(td)}</strong>kcal</span><span class="treat">${treatText(td)}</span></div><p class="hint">＋${fmtP(pt)}ポイント</p>`;
+  paint();show('fin');
+}
+$('camBtn').onclick=camSetupUI;
+$('camBack').onclick=()=>{camStop();show('home')};
+$('camStart').onclick=camStartFn;
+$('camDone').onclick=camFinish;
+$('camQuit').onclick=()=>{camStop();show('home')};
+$('camFlip').onclick=async()=>{camFacing=camFacing==='user'?'environment':'user';try{await camOpen()}catch(e){}};
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&camStream)wake()});
+
 $('fitBtn').onclick=fitIntro;
 
 /* ---- sync across devices (Google Apps Script 保管庫) ----
@@ -1408,7 +1554,7 @@ const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:v}catch
 const lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
 function gsCfg(){const url=lsGet('kt-gs-url',''),key=lsGet('kt-gs-key','');return url&&key?{url,key}:null}
 function packState(){
-  const L={};for(const k in logs)L[k]=logs[k].map(l=>l.kc!=null?{d:l.d,tier:l.tier,menu:l.menu,level:l.level,pts:l.pts,t:l.t,mins:l.mins,kg:l.kg,kc:l.kc,sec:l.sec,part:l.part,skip:l.skip}:(l.mins?[l.d,l.tier,l.menu,l.level,l.pts,l.t||0,l.mins]:l.t?[l.d,l.tier,l.menu,l.level,l.pts,l.t]:[l.d,l.tier,l.menu,l.level,l.pts]).join('|'));
+  const L={};for(const k in logs)L[k]=logs[k].map(l=>l.kc!=null?{d:l.d,tier:l.tier,menu:l.menu,level:l.level,pts:l.pts,t:l.t,mins:l.mins,kg:l.kg,kc:l.kc,sec:l.sec,part:l.part,skip:l.skip,reps:l.reps}:(l.mins?[l.d,l.tier,l.menu,l.level,l.pts,l.t||0,l.mins]:l.t?[l.d,l.tier,l.menu,l.level,l.pts,l.t]:[l.d,l.tier,l.menu,l.level,l.pts]).join('|'));
   return {v:3,mt:+lsGet('kt-mtime',0)||0,people,recs,tests,logs:L,goals,ghist,dels,gdel,wlog};
 }
 function applyState(d){
