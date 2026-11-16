@@ -179,6 +179,15 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
 .wrow .tx{flex:1 1 140px;width:auto}
 .wrow .big{flex:1 1 140px;width:auto;min-height:56px;font-size:1.2rem}
 .upc{color:var(--accent)}.dnc{color:var(--warm)}
+.wgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:10px 0}
+.wgrid label{display:flex;flex-direction:column;gap:4px;font-weight:700;min-width:0}
+.wgrid label span{display:flex;align-items:center;gap:6px;font-weight:400}
+.wgrid input.filled{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--bg))}
+.comp{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:8px 0}
+.comp div{border:1px solid var(--line);border-radius:12px;padding:8px 10px;min-width:0}
+.comp span{display:block;font-size:.9rem}.comp b{font-size:1.3rem}.comp i{font-style:normal;margin-left:3px}.comp small{display:block}
+.wgrid label span{white-space:nowrap}
+#wMetric{margin-top:8px}
 .tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
 .tile span{color:var(--muted);font-size:.9rem}
@@ -354,11 +363,12 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
   <p class="hint">体力年齢の判定基準：中谷敏昭ら「30秒椅子立ち上がりテスト（CS-30テスト）成績の加齢変化と標準値の作成」臨床スポーツ医学 20(3), 2003／文部科学省「体力・運動能力調査」年齢別平均値（上体起こし）。判定は目安で、医学的な診断ではありません。持病のある方は、運動を始める前に医師に相談してください。</p>
   <section class="panel" aria-label="バージョン情報">
     <details class="guide-d">
-      <summary><h2>バージョン 3.5<small class="vdate">（2026年11月16日）</small></h2></summary>
+      <summary><h2>バージョン 3.6<small class="vdate">（2026年11月16日）</small></h2></summary>
       <div class="gd">
         <div class="tbl"><table>
           <thead><tr><th>版</th><th>日付</th><th>おもな変更</th></tr></thead>
           <tbody>
+            <tr><th>3.6</th><td>11/16</td><td>体重と一緒に、体脂肪率・骨格筋率・筋肉量・内臓脂肪・基礎代謝も記録してグラフに。体重計アプリの画面写真から数値を読み取る（試験版）</td></tr>
             <tr><th>3.5</th><td>11/16</td><td>関節ほぐし6種のイラスト。動き方をイラストに合わせた（座って行う股関節回し、手で回す足首回し など）</td></tr>
             <tr><th>3.4</th><td>11/16</td><td>⑦ 関節ほぐし（首・肩・胸・背中・股関節・ひざ・足首）を追加。運動の最初に関節ほぐしのウォームアップを自動で付ける（つけない設定も可）</td></tr>
             <tr><th>3.3</th><td>11/15</td><td>ストレッチ4種のイラスト。⑥ ストレッチは1か所30秒に。キープする種目の前に「3、2、1」のカウントダウン</td></tr>
@@ -1416,9 +1426,11 @@ function svgKcal(pid){
 }
 
 /* ---- weight log ---- */
-function addWeight(pid,kg,setPerson){
+/* 体組成計の項目（体重のほかは任意） */
+const COMP=[['kg','体重','kg',1,-1],['fat','体脂肪率','%',1,-1],['smr','骨格筋率','%',1,1],['mkg','筋肉量','kg',1,1],['vf','内臓脂肪','',0,-1],['bmr','基礎代謝','kcal',0,1]];
+function addWeight(pid,kg,setPerson,ext){
   const q=people.find(x=>x.id===pid);const d=dkey(new Date());
-  (wlog[pid]||(wlog[pid]=[])).push({d,kg:Math.round(kg*10)/10,t:Date.now()});store.set('kt-wlog',wlog);
+  (wlog[pid]||(wlog[pid]=[])).push({d,kg:Math.round(kg*10)/10,t:Date.now(),...(ext||{})});store.set('kt-wlog',wlog);
   if(setPerson&&q&&q.weight!==kg){q.weight=Math.round(kg*10)/10;savePeople()}
 }
 function weightPoints(pid){const by=new Map();(wlog[pid]||[]).forEach(w=>{const o=by.get(w.d);if(!o||w.t>o.t)by.set(w.d,w)});return [...by.values()].sort((a,b)=>a.d<b.d?-1:1)}
@@ -1430,18 +1442,26 @@ function weightSummary(pid){
     (w.length>1?`<p>最初の記録（${fmtD(f.d)}）から <b class="${ch<=0?'upc':'dnc'}">${ch>0?'＋':ch<0?'－':'±'}${Math.abs(ch)}kg</b></p>`:'')+
     (due.due?'<p class="skip">そろそろ体重を測る日です（前回から7日以上）。</p>':'');
 }
-function svgWeight(pid){
-  const w=weightPoints(pid).slice(-26),W=600,H=260,L=70,R=70,T=30,B=44;
+const compPts=(pid,k)=>weightPoints(pid).filter(p=>p[k]!=null);
+function compSummary(pid){
+  const rows=COMP.slice(1).map(([k,n,u,dg,good])=>{const w=compPts(pid,k);if(!w.length)return '';
+    const l=w[w.length-1],f=w[0],ch=Math.round((l[k]-f[k])*10)/10;
+    return `<div><span>${n}</span><b>${l[k]}</b>${u?`<i>${u}</i>`:''}${w.length>1?`<small class="${ch*good>=0?'upc':'dnc'}">最初から ${ch>0?'＋':ch<0?'－':'±'}${Math.abs(ch)}</small>`:''}</div>`}).join('');
+  return rows?`<div class="comp">${rows}</div>`:'';
+}
+let wMet='kg';
+function svgWeight(pid,key='kg'){
+  const [,nm,un,dg]=COMP.find(c=>c[0]===key),w=compPts(pid,key).slice(-26),W=600,H=260,L=86,R=70,T=30,B=44;
   const t0=kd(w[0].d).getTime(),t1=Math.max(kd(w[w.length-1].d).getTime(),t0+864e5);
-  const mn=Math.min(...w.map(x=>x.kg)),mx=Math.max(...w.map(x=>x.kg)),pad=Math.max(1,(mx-mn)*.2),lo=Math.floor(mn-pad),hi=Math.ceil(mx+pad);
+  const st=key==='bmr'?20:1,mn=Math.min(...w.map(x=>x[key])),mx=Math.max(...w.map(x=>x[key])),pad=Math.max(st,(mx-mn)*.2),lo=Math.floor((mn-pad)/st)*st,hi=Math.ceil((mx+pad)/st)*st;
   const x=d=>L+(W-L-R)*(kd(d).getTime()-t0)/(t1-t0),y=v=>T+(H-T-B)*(hi-v)/(hi-lo);
-  const line=w.map((p,i)=>`${i?'L':'M'}${x(p.d).toFixed(1)},${y(p.kg).toFixed(1)}`).join('');
-  const l=w[w.length-1],mid=Math.round((lo+hi)/2);
-  return `<svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="体重の推移。${fmtD(w[0].d)} ${w[0].kg}kg から ${fmtD(l.d)} ${l.kg}kg">
-   ${[lo,mid,hi].map(v=>`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" class="${v===lo?'ax':'grid'}"/><text x="${L-8}" y="${y(v)+6}" class="tl" text-anchor="end">${v}kg</text>`).join('')}
+  const line=w.map((p,i)=>`${i?'L':'M'}${x(p.d).toFixed(1)},${y(p[key]).toFixed(1)}`).join('');
+  const l=w[w.length-1],mid=Math.round((lo+hi)/2/st)*st;
+  return `<svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="${nm}の推移。${fmtD(w[0].d)} ${w[0][key]}${un} から ${fmtD(l.d)} ${l[key]}${un}">
+   ${[lo,mid,hi].map(v=>`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" class="${v===lo?'ax':'grid'}"/><text x="${L-8}" y="${y(v)+6}" class="tl" text-anchor="end">${v}${un}</text>`).join('')}
    <path d="${line}" class="ln"/>
-   ${w.map(p=>`<circle cx="${x(p.d)}" cy="${y(p.kg)}" r="${p===l?7:4.5}" class="dot"/>`).join('')}
-   <text x="${x(l.d)+12}" y="${y(l.kg)+7}" class="tv">${l.kg}</text>
+   ${w.map(p=>`<circle cx="${x(p.d)}" cy="${y(p[key])}" r="${p===l?7:4.5}" class="dot"/>`).join('')}
+   <text x="${x(l.d)+12}" y="${y(l[key])+7}" class="tv">${l[key]}</text>
    <text x="${L}" y="${H-12}" class="tl">${fmtD(w[0].d)}</text>
    <text x="${W-R}" y="${H-12}" class="tl" text-anchor="end">${fmtD(l.d)}</text>
   </svg>`;
@@ -1516,11 +1536,20 @@ function profile(pid){
     <div class="tile"><span>今日の消費</span><b>${Math.round(dayKcal(pid,dkey(new Date())))}<small>kcal</small></b></div>
     <div class="tile"><span>今月の消費</span><b>${Math.round(monthKcal(pid))}<small>kcal</small></b></div>
    </div>
-   <div class="panel" id="wPanel"><h2>体重の記録</h2>
+   <div class="panel" id="wPanel"><h2>体重・体組成の記録</h2>
     ${weightSummary(pid)}
-    <div class="wrow"><input id="wIn" class="tx" type="number" inputmode="decimal" min="20" max="200" step="0.1" placeholder="例：71.5" value="" aria-label="今日の体重（kg）"><span>kg</span><button class="big" id="wSave">記録する</button></div>
-    <p class="hint" id="wMsg">週1回、同じ曜日の同じ条件（朝、トイレのあと・朝食前など）で測ると、変化が分かりやすくなります。</p>
-    ${weightPoints(pid).length>=2?`<div class="chartbox">${svgWeight(pid)}</div>`:'<p class="hint">2回以上記録すると、グラフが出ます。</p>'}
+    ${compSummary(pid)}
+    <label class="ghost" for="wPic" style="display:flex;align-items:center;justify-content:center;box-sizing:border-box;margin-top:8px">体重計アプリの画面写真から読み取る</label>
+    <input type="file" id="wPic" accept="image/*" hidden>
+    <p class="hint" id="wScanMsg">体重計アプリの結果画面をスクリーンショットして選ぶと、数値を読み取って下の欄に入れます（インターネットが必要。はじめては準備に少し時間がかかります）。</p>
+    <div class="wgrid">
+     ${COMP.map(([k,n,u])=>`<label>${n}<span><input id="w_${k}" class="tx" type="number" inputmode="decimal" step="${k==='bmr'||k==='vf'?1:0.1}" placeholder="${{kg:'例：65.7',fat:'例：19.8',smr:'例：51.8',mkg:'例：50',vf:'例：6',bmr:'例：1507'}[k]}">${u||'<span class="hint">レベル</span>'}</span></label>`).join('')}
+    </div>
+    <p class="hint">体重のほかは、体組成計（体脂肪などが出る体重計）がなければ空欄のままでかまいません。</p>
+    <button class="big" id="wSave">記録する</button>
+    <p class="hint" id="wMsg">週1回、同じ曜日の同じ条件（朝、トイレのあと・朝食前など）で測ると、変化が分かりやすくなります。体組成計（体脂肪などが出る体重計）は、体の水分で数値が変わりやすいので、1回ごとより流れを見てください。</p>
+    ${(()=>{const av=COMP.filter(c=>compPts(pid,c[0]).length>=2);if(!av.length)return '<p class="hint">2回以上記録すると、グラフが出ます。</p>';if(!av.some(c=>c[0]===wMet))wMet=av[0][0];
+      return `${av.length>1?`<div class="seg" role="group" aria-label="グラフの項目" id="wMetric">${av.map(c=>`<button data-v="${c[0]}" aria-pressed="${c[0]===wMet}">${c[1]}</button>`).join('')}</div>`:''}<div class="chartbox" id="wChart">${svgWeight(pid,wMet)}</div>`})()}
    </div>
    <div class="panel"><h2>1日ごとの消費カロリー（2週間）</h2>
     <div class="chartbox">${svgKcal(pid)}</div>
@@ -1543,11 +1572,78 @@ function profile(pid){
   $('pfUse').onclick=()=>{curId=pid;withIds.delete(pid);savePeople();paint();show('home')};
   $('pfEdit').onclick=()=>{curId=pid;savePeople();paint();show('home');openForm(false);$('form').scrollIntoView({block:'center'})};
   $('pfBack').onclick=()=>{paint();show('home')};
-  $('wSave').onclick=()=>{const v=parseFloat($('wIn').value);
+  document.querySelectorAll('#wMetric button').forEach(b=>b.onclick=()=>{wMet=b.dataset.v;document.querySelectorAll('#wMetric button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));$('wChart').innerHTML=svgWeight(pid,wMet)});
+  $('wPic').onchange=async e=>{const file=e.target.files&&e.target.files[0];e.target.value='';if(!file)return;
+    const m=$('wScanMsg');m.textContent='読み取りの準備をしています…';
+    try{const text=await ocrImage(file,(st,pr)=>{m.textContent=(/recogniz/.test(st)?'読み取り中… ':'準備中… ')+Math.round(pr*100)+'%'});
+      const r=parseScale(text,(weightPoints(pid).slice(-1)[0]||{}).kg||q.weight),got=COMP.filter(c=>r[c[0]]!=null);
+      COMP.forEach(([k])=>{const el=$('w_'+k);el.classList.remove('filled');if(r[k]!=null){el.value=r[k];el.classList.add('filled')}});
+      m.textContent=got.length?`${got.map(c=>c[1]).join('・')}を読み取りました（緑の欄）。写真と見くらべて、ちがっていたら直してから「記録する」を押してください。`:'数値を読み取れませんでした。結果の画面全体が写るようにスクリーンショットして、もう一度選ぶか、手で入れてください。';
+      if(got.length)say(`${got.length}つの数値を読み取りました。たしかめてから、記録してください。`);
+    }catch(err){m.textContent='読み取りができませんでした。インターネットにつながっているか確かめてください。数値は手で入れることもできます。'}};
+  $('wSave').onclick=()=>{const v=parseFloat($('w_kg').value);
     if(!(v>=20&&v<=200)){$('wMsg').textContent='体重を数字で入れてください（例：71.5）。';return}
-    addWeight(pid,v,true);say(`${q.name}さんの体重、${v}キロを記録しました。`);profile(pid);setTimeout(()=>{const e=$('wPanel');e&&e.scrollIntoView({block:'start'})},50)};
+    const ext={};let bad='';
+    COMP.slice(1).forEach(([k,n])=>{const t=$('w_'+k).value.trim();if(!t)return;const x=parseFloat(t);
+      if(!(x>=SCALE_RANGE[k][0]&&x<=SCALE_RANGE[k][1]))bad=bad||n;else ext[k]=k==='bmr'||k==='vf'?Math.round(x):Math.round(x*10)/10});
+    if(bad){$('wMsg').textContent=`${bad}の数値を確かめてください。`;return}
+    addWeight(pid,v,true,ext);
+    say(`${q.name}さんの体重、${v}キロ${ext.fat!=null?`、体脂肪率${ext.fat}パーセント`:''}を記録しました。`);profile(pid);setTimeout(()=>{const e=$('wPanel');e&&e.scrollIntoView({block:'start'})},50)};
 }
 $('profBtn').onclick=()=>profile(cur().id);
+
+/* ---- 体重計アプリの画面写真を読み取る（tesseract.js・日本語。画像は端末の中だけで処理し、外へは送らない） ---- */
+const TESS_URL='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+let tessP=null;
+function loadTess(){return tessP||(tessP=new Promise((res,rej)=>{if(window.Tesseract)return res(window.Tesseract);
+  const sc=document.createElement('script');sc.src=TESS_URL;sc.onload=()=>res(window.Tesseract);sc.onerror=()=>{tessP=null;rej(new Error('load'))};document.head.appendChild(sc)}))}
+async function ocrImage(file,onMsg){
+  const T=await loadTess();
+  const img=await new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{URL.revokeObjectURL(u);res(im)};im.onerror=rej;im.src=u});
+  /* 小さい画像は拡大、大きすぎる画像は縮小して、白黒にしてから読む */
+  const k=img.width<1000?Math.min(4,1000/img.width):Math.min(1,1600/img.width),cv=document.createElement('canvas');
+  cv.width=Math.round(img.width*k);cv.height=Math.round(img.height*k);const g=cv.getContext('2d');
+  g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';g.filter='grayscale(1)';g.fillStyle='#fff';g.fillRect(0,0,cv.width,cv.height);g.drawImage(img,0,0,cv.width,cv.height);
+  const w=await T.createWorker('jpn',1,{logger:m=>{if(m&&m.progress!=null)onMsg(m.status||'',m.progress)}});
+  try{const {data}=await w.recognize(cv);window.__ocrText=data.text;return data.text}finally{w.terminate()}
+}
+/* 体重計アプリの画面写真の文字（OCR）から、体重・体脂肪率・骨格筋率・筋肉量・内臓脂肪・基礎代謝を取り出す */
+const SCALE_RANGE={kg:[20,200],fat:[3,60],smr:[15,70],mkg:[10,120],vf:[1,30],bmr:[600,4000]};
+function scaleNum(line){
+  if(/\d{6,}/.test(line)||/20\d\d\s*[\/年]/.test(line))return null; // 日付
+  const re=/(\d{1,4}(?:[.,]\d{1,2})?)\s*(kcal|kcai|kca|ksa|kg|ks|k9|kq|ka|xs|g|%|x|s)?/gi;let best=null,m;
+  while((m=re.exec(line))){
+    const u=(m[2]||'').toLowerCase(),unit=/^(kc|ksa)/.test(u)?'kcal':/^(kg|ks|k9|kq|ka|xs|g)$/.test(u)?'kg':/^(%|x|s)$/.test(u)?'%':'';
+    let v=parseFloat(m[1].replace(',','.')),dec=/[.,]/.test(m[1]);
+    if(unit==='%'&&!dec&&v>=100&&v<1000){v=v/10;dec=true} // 「51.8%」の小数点が消えたとき
+    const sc=(unit?2:0)+(dec?1:0);
+    if(!best||sc>best.sc)best={v,unit,dec,sc,solo:/^\D{0,1}\s*\d{1,2}\s*\D{0,1}$/.test(line)};
+  }
+  return best;
+}
+function parseScale(text,prevKg){
+  const lines=String(text).split('\n').map(x=>x.replace(/\s+/g,' ').trim()).filter(Boolean);
+  const ok=(k,v)=>v!=null&&v>=SCALE_RANGE[k][0]&&v<=SCALE_RANGE[k][1];
+  const out={};
+  /* 1) 項目名が読めたとき：同じ行か、すぐ上の行の数値 */
+  const KW=[['fat',/体脂肪率/],['smr',/骨格筋/],['mkg',/筋肉量/],['vf',/内臓脂肪/],['bmr',/基礎代謝/],['kg',/^[^脂肪除]*体重[^脂肪除]*$/]];
+  lines.forEach((ln,i)=>{const t=ln.replace(/ /g,'');KW.forEach(([k,re])=>{
+    if(out[k]!=null||!re.test(t))return;
+    for(const x of [scaleNum(ln),i>0?scaleNum(lines[i-1]):null])if(x&&ok(k,x.v)){out[k]=x.v;break}
+  })});
+  /* 2) 項目名が読めないとき：上からの並び順（体重→体脂肪率→BMI→骨格筋→筋肉量→…→基礎代謝→…→内臓脂肪） */
+  const seq=lines.map(scaleNum).filter(Boolean),f={};let i=-1;const b=seq.findIndex(x=>x.unit==='kcal'&&ok('bmr',x.v)),lim=b>=0?b:seq.length;
+  const next=(test)=>{for(let j=i+1;j<lim;j++)if(test(seq[j])){i=j;return seq[j]}return null};
+  let x=next(x=>(x.unit==='kg'||x.dec)&&ok('kg',x.v)&&(!prevKg||Math.abs(x.v-prevKg)<=8));if(x){f.kg=x.v;
+    x=next(x=>(x.unit==='%'||x.dec)&&ok('fat',x.v));if(x){f.fat=x.v;
+      x=next(x=>x.dec&&x.unit!=='kg'&&x.v>=10&&x.v<=50); // BMI
+      if(x){x=next(x=>(x.unit==='%'||x.dec)&&ok('smr',x.v));if(x){f.smr=x.v;
+        const k0=i;x=next(x=>x.unit!=='%'&&x.unit!=='kcal'&&ok('mkg',x.v)&&x.v<=f.kg);if(x)f.mkg=x.v;else i=k0}}}}
+  if(b>=0){f.bmr=seq[b].v;for(let j=b+1;j<=b+6&&j<seq.length;j++)if(seq[j].solo&&!seq[j].dec&&ok('vf',seq[j].v)){f.vf=seq[j].v;break}}
+  Object.keys(f).forEach(k=>{if(out[k]==null)out[k]=f[k]});
+  return out;
+}
+
 
 /* ---- camera squat counter（MediaPipe Pose を端末内で実行） ----
    ひざの角度（腰・ひざ・足首）と、立った姿勢からの腰の下がり具合の両方で「しゃがんだ」を判定し、立ち上がったら1回。 */
