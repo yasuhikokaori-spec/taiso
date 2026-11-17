@@ -237,6 +237,10 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
 .today-card h3{margin:0;font-size:1.2rem}
 .today-card ul{margin:0;padding-left:1.2em}
 .guide-list{padding-left:1.2em;margin:8px 0}.guide-list li{margin:8px 0}
+.wkbig{display:flex;flex-direction:column;align-items:center;gap:2px}.wkbig b{font-size:4rem;font-variant-numeric:tabular-nums;line-height:1}
+.wkgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.wkgrid div{border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;flex-direction:column;align-items:center}
+.wkgrid b{font-size:2rem;font-variant-numeric:tabular-nums}.wkgrid span{font-size:.9rem;opacity:.8}
 .camp{display:flex;flex-direction:column;gap:12px}
 .cbar{display:flex;flex-direction:column;gap:4px}
 .cbar .lab{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
@@ -414,11 +418,12 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
   <p class="hint">体力年齢の判定基準：中谷敏昭ら「30秒椅子立ち上がりテスト（CS-30テスト）成績の加齢変化と標準値の作成」臨床スポーツ医学 20(3), 2003／文部科学省「体力・運動能力調査」年齢別平均値（上体起こし）。判定は目安で、医学的な診断ではありません。持病のある方は、運動を始める前に医師に相談してください。</p>
   <section class="panel" aria-label="バージョン情報">
     <details class="guide-d">
-      <summary><h2>バージョン 3.9<small class="vdate">（2026年11月17日）</small></h2></summary>
+      <summary><h2>バージョン 4.0<small class="vdate">（2026年11月17日）</small></h2></summary>
       <div class="gd">
         <div class="tbl"><table>
           <thead><tr><th>版</th><th>日付</th><th>おもな変更</th></tr></thead>
           <tbody>
+            <tr><th>4.0</th><td>11/17</td><td>外歩きの計測：スタート・一時停止・終了で時間を計り、歩数（スマホの動きセンサー）・距離（GPS）・速さ・消費カロリー・ポイントを記録。10分ごとに声でお知らせ</td></tr>
             <tr><th>3.9</th><td>11/17</td><td>⑧ 足踏み（家の中で10分）を追加。かるい日・歩く日は「家の中で足踏み」か「外を歩く」を選べる。外を歩いた時間の記録。おなか作戦は「毎日少し動く」に</td></tr>
             <tr><th>3.8</th><td>11/17</td><td>1〜3か月の「大作戦」：家族ひとりひとりが目標（体重・腹囲・体脂肪率・体力測定の回数）を立て、進み具合を毎日確認。腹囲の記録。予定の型「おなか作戦（毎日歩く）」</td></tr>
             <tr><th>3.7</th><td>11/17</td><td>「今週の予定」：曜日ごとの予定（筋トレ・かるい・歩く・休み）と、今日のおすすめ。きのうの運動や久しぶりかどうかに合わせて自動で調整。スケジュールの考え方</td></tr>
@@ -506,6 +511,34 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
     <div class="adj"><button class="ghost" id="camMinus">－1（数えすぎを直す）</button><button class="ghost" id="camPlus">＋1</button></div>
     <p class="hint">数えすぎるときは、しゃがむ深さを1段深くしてください。</p>
     <div class="ctrl"><button class="big" id="camDone">終了して記録</button><button class="ghost" id="camFlip">カメラ切替</button><button class="ghost skipb" id="camQuit">記録しないでやめる</button></div>
+  </div>
+</div>
+
+<div class="wrap" id="walk" hidden>
+  <div class="stage">
+    <span class="kicker" id="wkKicker">外を歩く</span>
+    <h2 id="wkTitle">歩く準備</h2>
+  </div>
+  <div class="panel" id="wkSetup">
+    <p>スタートを押してから歩き始め、帰ってきたら「終了して記録」を押します。時間・歩数・距離（GPS）・消費カロリー・ポイントを記録します。</p>
+    <ul class="guide-list">
+      <li>スマホは<b>ポケットか手に持って</b>歩いてください。</li>
+      <li><b>画面はつけたまま</b>がおすすめです（自動で消えないようにします）。画面を消すと、機種によっては歩数と距離が止まります。時間は正しく計れます。</li>
+      <li>はじめての時は「位置情報」と「動きと向き」の使用を聞かれます。「許可」を押してください。位置はこの端末の中だけで使い、どこにも送りません。</li>
+    </ul>
+    <button class="big" id="wkGo">スタート</button>
+    <button class="ghost" id="wkBack">もどる</button>
+  </div>
+  <div class="panel" id="wkLive" hidden>
+    <div class="wkbig"><b id="wkTime">0:00</b><span>歩いた時間</span></div>
+    <div class="wkgrid">
+      <div><b id="wkDist">0.00</b><span>km（GPS）</span></div>
+      <div><b id="wkSteps">0</b><span>歩</span></div>
+      <div><b id="wkSpeed">—</b><span>km/時</span></div>
+      <div><b id="wkKc">0</b><span>kcal</span></div>
+    </div>
+    <p class="hint" id="wkStat" aria-live="polite"></p>
+    <div class="ctrl"><button class="big" id="wkPause">一時停止</button><button class="big" id="wkStop">終了して記録</button><button class="ghost skipb" id="wkQuit">記録しないでやめる</button></div>
   </div>
 </div>
 
@@ -1010,7 +1043,7 @@ const total=()=>L.reduce((a,s)=>a+s.dur,0);
 const before=n=>L.slice(0,n).reduce((a,s)=>a+s.dur,0);
 async function wake(){try{if(lock)return;lock=await navigator.wakeLock.request('screen');lock.addEventListener('release',()=>{lock=null})}catch(e){lock=null}}
 function unwake(){try{lock&&lock.release()}catch(e){}lock=null}
-function show(id){['home','run','fin','test','cam'].forEach(x=>$(x).hidden=x!==id);window.scrollTo(0,0);if(id==='home'&&pendingRemote){const d=pendingRemote;pendingRemote=null;applyState(mergeDocs(packState(),d))}}
+function show(id){['home','run','fin','test','cam','walk'].forEach(x=>$(x).hidden=x!==id);window.scrollTo(0,0);if(id==='home'&&pendingRemote){const d=pendingRemote;pendingRemote=null;applyState(mergeDocs(packState(),d))}}
 const running=()=>!$('run').hidden&&timer!==null;
 const stepEl=()=>paused?pausedEl/1000:(performance.now()-t0)/1000;
 function enter(n){
@@ -1499,16 +1532,18 @@ function planPanel(){
     ${(()=>{const mm=moveMin(p.id,today),bel=campOn(p)&&p.camp.goal==='belly',mv=tp.t==='W'||(tp.t==='L'&&bel);
       return `${mv?`<div><b>今日の動き方を選んでください</b>（どちらでもOK・組み合わせてもOK）</div>
       <div class="seg" id="mvSeg"><button data-v="step">家の中で⑧足踏み10分</button><button data-v="walk">外を歩く</button></div>`
-      :`<button class="link" id="mvWalkOpen" style="align-self:flex-start">外を歩いた分を記録する</button>`}
-      <div id="walkBox" hidden><div><b>外を歩いた時間：</b><span class="hint">歩いて帰ってきたら押してください</span></div>
+      :`<button class="link" id="mvWalkOpen" style="align-self:flex-start">外を歩く（時間・歩数・距離を計る）</button>`}
+      <div id="walkBox" hidden><button class="big" id="walkStart">歩き始める（時間・歩数・距離を計る）</button>
+      <div><b>計らずに歩いたときは、時間だけ記録：</b></div>
       <div class="btns" id="walkBtns">${[10,20,30,45].map(m=>`<button class="ghost" data-m="${m}">${m}分</button>`).join('')}</div><p class="hint" id="walkMsg"></p></div>
       ${mm||bel?`<p>今日の足踏み・歩き：<b>${mm}分</b>${bel?`　（目安 30分${mm>=30?'　✓ できました':`、あと${30-mm}分`}）`:''}</p>`:''}`})()}`;
   if($('tdUse'))$('tdUse').onclick=()=>{Object.assign(p,st);savePeople();paint();say(`${p.name}さん、今日は${({S:'筋トレの日',L:'かるい日',W:'歩く日',R:'休みの日'})[tp.t]}です。メニューを合わせました。`);setTimeout(()=>$('menuPanel').scrollIntoView({block:'start'}),60)};
   if($('tdTest'))$('tdTest').onclick=()=>$('fitBtn').scrollIntoView({block:'center'});
   const openWalk=()=>{$('walkBox').hidden=false;$('walkBox').scrollIntoView({block:'nearest'})};
   if($('mvWalkOpen'))$('mvWalkOpen').onclick=openWalk;
+  $('walkStart').onclick=()=>walkOpen();
   if($('mvSeg'))$('mvSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{press($('mvSeg'),b.dataset.v);
-    if(b.dataset.v==='walk'){openWalk();say('外を歩く日ですね。少し速めに、腕を振って。帰ってきたら、歩いた時間を押してください。')}
+    if(b.dataset.v==='walk'){openWalk();say('外を歩く日ですね。歩き始めるを押してから、出発してください。')}
     else{Object.assign(p,{menu:'step',level:tp.back?'light':'normal',mins:'full'});savePeople();paint();setTimeout(()=>$('menuPanel').scrollIntoView({block:'start'}),60)}});
   $('walkBtns').querySelectorAll('button').forEach(b=>b.onclick=()=>{
     if(!b.dataset.c){$('walkBtns').querySelectorAll('button').forEach(x=>{delete x.dataset.c;x.textContent=x.dataset.m+'分'});b.dataset.c='1';b.textContent=`${b.dataset.m}分を記録する`;$('walkMsg').textContent='もう一度押すと記録します。';return}
@@ -1518,6 +1553,90 @@ function planPanel(){
     store.set('kt-recs',recs);saveG();say(`${p.name}さん、${m}分の歩きを記録しました。約${Math.round(kc)}キロカロリーです。`);paint()});
   if(dayLogs(p.id,today).some(l=>l.menu==='walk')&&$('mvSeg'))press($('mvSeg'),'walk');
 }
+/* ---- 外を歩く：時間・歩数（加速度センサー）・距離（GPS）を計る ---- */
+/* 歩数：加速度（重力込み）の大きさから、歩くリズムの山を数える */
+function makeStepper(){
+  let lp=null,g=null,armed=true,last=0,n=0;
+  return {get n(){return n},set n(v){n=v},
+    feed(ax,ay,az,t){
+      const m=Math.sqrt(ax*ax+ay*ay+az*az);if(!isFinite(m))return false;
+      if(lp==null){lp=m;g=m;return false}
+      lp=lp*0.75+m*0.25;g=g*0.985+m*0.015;const v=lp-g;
+      if(armed&&v>1.1&&t-last>300){armed=false;last=t;n++;return true}
+      if(!armed&&v<0.2)armed=true;
+      return false}};
+}
+function hav(a,b){const R=6371000,r=x=>x*Math.PI/180,dl=r(b.lat-a.lat),dn=r(b.lon-a.lon),s=Math.sin(dl/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(s))}
+const walkMet=kmh=>kmh<3.2?2.8:kmh<4.0?3.0:kmh<4.8?3.5:kmh<5.6?4.3:kmh<6.4?5.0:6.0;
+
+const clk=sec=>{sec=Math.floor(sec);const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),x=String(sec%60).padStart(2,'0');return h?`${h}:${String(m).padStart(2,'0')}:${x}`:`${m}:${x}`};
+let WK=null,wkTick=null,wkGeo=null,wkStep=null,wkMotionOn=false;
+const wkSave=()=>{try{if(WK)localStorage.setItem('kt-walk',JSON.stringify(WK));else localStorage.removeItem('kt-walk')}catch(e){}};
+const wkEl=()=>WK?Math.max(0,((WK.pausedAt||Date.now())-WK.start-WK.pAcc)/1000):0;
+const wkKmh=()=>{const h=wkEl()/3600;return WK&&WK.dist>30&&h>0?WK.dist/1000/h:null};
+function wkKcal(){const q=people.find(x=>x.id===WK.pid)||cur(),v=wkKmh();return 1.05*(walkMet(v??4.0)-1)*wkEl()/3600*kgOf(q)}
+function wkStepsShown(){if(WK.steps>0&&WK.motion)return {n:WK.steps,est:false};
+  if(WK.dist>30)return {n:Math.round(WK.dist/0.65),est:true};return {n:Math.round(wkEl()/60*100),est:true}}
+function wkDraw(){if(!WK)return;
+  $('wkTime').textContent=clk(wkEl());$('wkDist').textContent=(WK.dist/1000).toFixed(2);
+  const st=wkStepsShown();$('wkSteps').textContent=(st.est?'約':'')+st.n.toLocaleString();
+  const v=wkKmh();$('wkSpeed').textContent=v?v.toFixed(1):'—';$('wkKc').textContent=Math.round(wkKcal());
+  $('wkStat').textContent=[WK.pausedAt?'一時停止中':'',WK.gps==='ok'?'GPS：受信中':WK.gps==='wait'?'GPS：さがしています…（空の見える所で）':WK.gps==='no'?'GPS：使えません（距離は記録しません）':'',
+    WK.motion?'歩数：数えています':'歩数：センサーが使えないため、距離か時間からの推定'].filter(Boolean).join('　')}
+function wkOnPos(pos){if(!WK||WK.pausedAt)return;const c=pos.coords,pt={lat:c.latitude,lon:c.longitude,t:Date.now()};
+  if(c.accuracy>35){if(WK.gps!=='ok')WK.gps='wait';return}
+  WK.gps='ok';
+  if(!WK.last){WK.last=pt;return}
+  const d=hav(WK.last,pt),dt=Math.max(1,(pt.t-WK.last.t)/1000);
+  if(d<Math.max(5,c.accuracy*0.5))return;
+  if(d/dt>3.5){WK.last=pt;return}
+  WK.dist+=d;WK.last=pt}
+function wkMotion(e){if(!WK||WK.pausedAt)return;const a=e.accelerationIncludingGravity;if(!a||a.x==null)return;
+  WK.motion=true;if(wkStep.feed(a.x,a.y,a.z,e.timeStamp||performance.now()))WK.steps=wkStep.n}
+function wkStartSensors(){
+  if(navigator.geolocation&&wkGeo==null){WK.gps=WK.gps||'wait';
+    try{wkGeo=navigator.geolocation.watchPosition(wkOnPos,e=>{if(WK)WK.gps=e.code===1?'no':(WK.gps==='ok'?'ok':'wait')},{enableHighAccuracy:true,maximumAge:0,timeout:30000})}catch(e){WK.gps='no'}}
+  else if(!navigator.geolocation)WK.gps='no';
+  wkStep=makeStepper();wkStep.n=WK.steps||0;
+  if(!wkMotionOn){window.addEventListener('devicemotion',wkMotion);wkMotionOn=true}}
+function wkStopSensors(){try{wkGeo!=null&&navigator.geolocation.clearWatch(wkGeo)}catch(e){}wkGeo=null;
+  if(wkMotionOn){window.removeEventListener('devicemotion',wkMotion);wkMotionOn=false}clearInterval(wkTick);wkTick=null;unwake()}
+function wkRun(){wkStartSensors();wake();$('wkSetup').hidden=true;$('wkLive').hidden=false;$('wkTitle').textContent='歩いています';
+  $('wkPause').textContent=WK.pausedAt?'再開':'一時停止';
+  let lastAnn=Math.floor(wkEl()/600);clearInterval(wkTick);
+  wkTick=setInterval(()=>{wkDraw();wkSave();const k=Math.floor(wkEl()/600);
+    if(!WK.pausedAt&&k>lastAnn){lastAnn=k;say(`${k*10}分たちました。${WK.dist>100?`${(WK.dist/1000).toFixed(1)}キロメートル。`:''}${WK.motion?`${WK.steps}歩。`:''}その調子です。`)}},1000);wkDraw()}
+function walkOpen(){const p=cur();
+  if(WK){show('walk');wkRun();return}
+  $('wkKicker').textContent=`${p.name}さん・外を歩く`;$('wkTitle').textContent='歩く準備';$('wkSetup').hidden=false;$('wkLive').hidden=true;show('walk')}
+$('wkBack').onclick=()=>{show('home');paint()};
+$('wkGo').onclick=async()=>{
+  try{if(typeof DeviceMotionEvent!=='undefined'&&DeviceMotionEvent.requestPermission)await DeviceMotionEvent.requestPermission()}catch(e){}
+  WK={pid:cur().id,start:Date.now(),pAcc:0,pausedAt:0,dist:0,steps:0,last:null,gps:'',motion:false};wkSave();
+  say('スタートです。いってらっしゃい。');wkRun()};
+$('wkPause').onclick=()=>{if(!WK)return;
+  if(WK.pausedAt){WK.pAcc+=Date.now()-WK.pausedAt;WK.pausedAt=0;WK.last=null;$('wkPause').textContent='一時停止';say('再開します。')}
+  else{WK.pausedAt=Date.now();$('wkPause').textContent='再開';say('一時停止しました。')}wkSave();wkDraw()};
+$('wkQuit').onclick=()=>{const b=$('wkQuit');if(!b.dataset.c){b.dataset.c='1';b.textContent='本当にやめる（もう一度押す）';setTimeout(()=>{delete b.dataset.c;b.textContent='記録しないでやめる'},4000);return}
+  delete b.dataset.c;b.textContent='記録しないでやめる';wkStopSensors();WK=null;wkSave();show('home');paint()};
+$('wkStop').onclick=()=>{const b=$('wkStop');if(!b.dataset.c){b.dataset.c='1';b.textContent='記録する（もう一度押す）';setTimeout(()=>{delete b.dataset.c;b.textContent='終了して記録'},4000);return}
+  delete b.dataset.c;b.textContent='終了して記録';
+  if(!WK.pausedAt)WK.pausedAt=Date.now();
+  const sec=Math.round(wkEl()),q=people.find(x=>x.id===WK.pid)||cur(),kg=kgOf(q),kc=Math.round(wkKcal()*10)/10,st=wkStepsShown(),dist=Math.round(WK.dist),v=wkKmh();
+  wkStopSensors();
+  if(sec<60){WK=null;wkSave();say('1分未満なので、記録しませんでした。');show('home');paint();return}
+  const key=dkey(new Date()),pt=Math.round(ptsOf(q.tier,'both','normal',String(sec/60))*0.5*10)/10;
+  const days=recs[q.id]||(recs[q.id]=[]);if(!days.includes(key))days.push(key);
+  const e={d:key,tier:q.tier,menu:'walk',level:'normal',pts:pt,t:Date.now(),kg,kc,sec,steps:st.n};if(st.est)e.stepEst=1;if(dist>0)e.dist=dist;
+  (logs[q.id]||(logs[q.id]=[])).push(e);store.set('kt-recs',recs);saveG();WK=null;wkSave();
+  const td=dayKcal(q.id,key);
+  $('finTitle').textContent=`${q.name}さん、おかえりなさい`;
+  $('finText').textContent=`歩いた時間 ${mmss(sec)}　${dist>0?`距離 ${(dist/1000).toFixed(2)}km　`:''}${st.est?'約':''}${st.n.toLocaleString()}歩${v?`　平均 時速${v.toFixed(1)}km`:''}　＋${fmtP(pt)}ポイント`;
+  $('finKcal').innerHTML=`<p>約<b>${Math.round(kc)}</b>kcal 消費（今日の合計 約${Math.round(td)}kcal）</p>`;
+  say(`${q.name}さん、おかえりなさい。${Math.round(sec/60)}分歩きました。${dist>100?`${(dist/1000).toFixed(1)}キロメートル、`:''}${st.est?'およそ':''}${st.n}歩。約${Math.round(kc)}キロカロリー消費、${fmtP(pt)}ポイントです。${treatSay(td)}`);
+  show('fin')};
+try{const w=JSON.parse(localStorage.getItem('kt-walk')||'null');if(w&&w.start&&Date.now()-w.start<6*3600e3){WK=w;setTimeout(()=>{walkOpen();say('歩いている途中です。続きから計ります。')},300)}else localStorage.removeItem('kt-walk')}catch(e){}
+
 /* ---- 大作戦（1〜3か月の目標と、その管理） ----
    p.camp = {goal:'belly'|'strong', start:'YYYY-MM-DD', months, base:{…}, tgt:{…}}（変えるときは必ず新しいオブジェクトにする） */
 const CM={kg:['体重','kg',-1],waist:['腹囲','cm',-1],fat:['体脂肪率','%',-1],su:['上体起こし','回',1],cs:['椅子立ち上がり','回',1]};
