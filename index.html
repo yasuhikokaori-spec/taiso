@@ -226,6 +226,31 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
 .tbl tbody th{white-space:nowrap}
 .tbl small{display:block;font-weight:400;color:var(--muted);font-size:.8rem}
 .nowtip{border-left:4px solid var(--accent);padding-left:12px}
+.wk{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;margin:6px 0}
+.wk button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;min-height:76px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;cursor:pointer;min-width:0}
+.wk button small{font-size:.72rem;opacity:.75;white-space:nowrap}.wk button b{font-size:.7rem;line-height:1.15;white-space:nowrap;letter-spacing:-.04em}
+.wk button i{font-style:normal;font-size:.8rem;color:var(--accent);font-weight:700;min-height:1em}
+.wk button.today{border:2px solid var(--accent)}
+.wk button.past{opacity:.6}
+.wk .t-S b{color:var(--warm)}.wk .t-L b,.wk .t-W b{color:var(--accent)}
+.today-card{border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.today-card h3{margin:0;font-size:1.2rem}
+.today-card ul{margin:0;padding-left:1.2em}
+.guide-list{padding-left:1.2em;margin:8px 0}.guide-list li{margin:8px 0}
+.camp{display:flex;flex-direction:column;gap:12px}
+.cbar{display:flex;flex-direction:column;gap:4px}
+.cbar .lab{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.cbar .track{position:relative;height:14px;border-radius:7px;background:var(--line);overflow:visible}
+.cbar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:7px;background:var(--accent)}
+.cbar .pace{position:absolute;top:-4px;bottom:-4px;width:3px;background:var(--warm);border-radius:2px}
+.cbar small{opacity:.8}
+.cst-ok{color:var(--accent);font-weight:700}.cst-late{color:var(--warm);font-weight:700}
+.cfam{display:flex;flex-direction:column;gap:6px}
+.cfam button{display:flex;justify-content:space-between;gap:8px;text-align:left;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;cursor:pointer}
+.cform{display:flex;flex-direction:column;gap:12px;border:1px solid var(--line);border-radius:14px;padding:12px}
+.cform .tg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.cform .tg label{display:flex;flex-direction:column;gap:4px;font-weight:700;min-width:0}
+.cform .tg label span{display:flex;gap:6px;align-items:center;font-weight:400;white-space:nowrap}
 .skip{color:var(--warm);font-weight:700}
 .gnum b.neg{color:var(--warm)}
 @media (prefers-reduced-motion: reduce){.gauge i{transition:none}}
@@ -270,7 +295,33 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
     <button class="ghost" id="goalBtn">目標を立てる</button>
   </section>
 
-  <section class="panel" aria-label="きょうのメニュー">
+  <section class="panel" aria-label="大作戦" id="campPanel">
+    <div class="cal-head"><h2 id="campTitle">3か月大作戦</h2><span class="hint" id="campSub"></span></div>
+    <div class="camp" id="campBody"></div>
+  </section>
+
+  <section class="panel" aria-label="今週の予定" id="planPanel">
+    <div class="cal-head"><h2>今週の予定</h2><span class="hint">日を押すと予定を変えられます</span></div>
+    <div class="wk" id="wkStrip"></div>
+    <p class="hint" id="wkWarn" hidden></p>
+    <div class="today-card" id="todayCard"></div>
+    <div class="row"><label id="l-wkp">予定の型（はじめての人・いそがしい週は週2回）</label>
+      <div class="seg" role="group" aria-labelledby="l-wkp" id="wkPreset"><button data-v="2">筋トレ週2回</button><button data-v="3">筋トレ週3回（おすすめ）</button><button data-v="O">おなか作戦（毎日歩く）</button></div></div>
+    <details class="guide-d">
+      <summary><h2 style="font-size:1.05rem">スケジュールの考え方</h2></summary>
+      <ul class="guide-list">
+        <li><b>筋トレ（①基本・④椅子中心・⑤ジャンプなし）は1日おきに。</b>筋肉は、きたえた後の休みの間（48時間ほど）に強くなります。毎日続けるより、間に1日あけるほうが効果的です。</li>
+        <li><b>おなか（②）と関節ほぐし（⑦）は毎日でもかまいません。</b>筋トレのない日は「かるい日」として、この2つをします。</li>
+        <li><b>週に1日は休みの日</b>をつくります。ストレッチ（⑥）だけ、または何もしなくてかまいません。</li>
+        <li><b>歩く日</b>は、外を20〜40分歩くか、③立ったままメニューを。</li>
+        <li><b>強い筋肉痛・体調が悪い日・関節が痛む日は休みます。</b>予定どおりでなくてかまいません。翌日に回せば大丈夫です。</li>
+        <li><b>強さは「ふつう」が基本。</b>最後の数回が「ややきつい」くらいがちょうどよく、2週間ほど楽に続けられたら「しっかり」や、ひとつ若い年代に上げます。きつすぎたら下げます。</li>
+        <li><b>体重は週1回、体力測定は月1回。</b>同じ曜日・同じ時間に測ると、変化が分かりやすくなります。</li>
+      </ul>
+    </details>
+  </section>
+
+  <section class="panel" aria-label="きょうのメニュー" id="menuPanel">
     <h2>きょうのメニュー</h2>
     <div class="row"><label id="l-mtier">年代メニュー（どの年代でも選べます）</label>
       <div class="seg" role="group" aria-labelledby="l-mtier" data-key="tier">
@@ -363,11 +414,13 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
   <p class="hint">体力年齢の判定基準：中谷敏昭ら「30秒椅子立ち上がりテスト（CS-30テスト）成績の加齢変化と標準値の作成」臨床スポーツ医学 20(3), 2003／文部科学省「体力・運動能力調査」年齢別平均値（上体起こし）。判定は目安で、医学的な診断ではありません。持病のある方は、運動を始める前に医師に相談してください。</p>
   <section class="panel" aria-label="バージョン情報">
     <details class="guide-d">
-      <summary><h2>バージョン 3.6<small class="vdate">（2026年11月16日）</small></h2></summary>
+      <summary><h2>バージョン 3.8<small class="vdate">（2026年11月17日）</small></h2></summary>
       <div class="gd">
         <div class="tbl"><table>
           <thead><tr><th>版</th><th>日付</th><th>おもな変更</th></tr></thead>
           <tbody>
+            <tr><th>3.8</th><td>11/17</td><td>1〜3か月の「大作戦」：家族ひとりひとりが目標（体重・腹囲・体脂肪率・体力測定の回数）を立て、進み具合を毎日確認。腹囲の記録。予定の型「おなか作戦（毎日歩く）」</td></tr>
+            <tr><th>3.7</th><td>11/17</td><td>「今週の予定」：曜日ごとの予定（筋トレ・かるい・歩く・休み）と、今日のおすすめ。きのうの運動や久しぶりかどうかに合わせて自動で調整。スケジュールの考え方</td></tr>
             <tr><th>3.6</th><td>11/16</td><td>体重と一緒に、体脂肪率・骨格筋率・筋肉量・内臓脂肪・基礎代謝も記録してグラフに。体重計アプリの画面写真から数値を読み取る（試験版）</td></tr>
             <tr><th>3.5</th><td>11/16</td><td>関節ほぐし6種のイラスト。動き方をイラストに合わせた（座って行う股関節回し、手で回す足首回し など）</td></tr>
             <tr><th>3.4</th><td>11/16</td><td>⑦ 関節ほぐし（首・肩・胸・背中・股関節・ひざ・足首）を追加。運動の最初に関節ほぐしのウォームアップを自動で付ける（つけない設定も可）</td></tr>
@@ -488,7 +541,7 @@ if(!people){people=[{id:'p1',name:'わたし',tier:'60',menu:'both',level:'norma
 recs=recs||{};
 let curId=store.get('kt-cur',people[0].id);
 const cur=()=>people.find(p=>p.id===curId)||people[0];
-const PF=['name','age','sex','tier','kind','menu','level','weight','mins','cool','warm'];
+const PF=['name','age','sex','tier','kind','menu','level','weight','mins','cool','warm','wk','camp'];
 const pkey=q=>{const o={};PF.forEach(f=>o[f]=q[f]??null);return o};
 let pSnap=new Map(people.map(q=>[q.id,pkey(q)]));
 /* 変更した項目にだけ変更時刻を付ける（q.uf）。同期のとき、項目ごとに新しい方を使う */
@@ -907,7 +960,7 @@ function paint(){
       ex.appendChild(d);
     });
   });
-  calendar();fitPanel();goalPanel();guidePanel();
+  calendar();fitPanel();goalPanel();guidePanel();campPanel();planPanel();
 }
 let formNew=false,formTier='60',formSex='',formKind='family',delArmed=false;
 const withIds=new Set();
@@ -1369,6 +1422,189 @@ function evalGoal(p,prev,now){
 }
 $('goalBtn').onclick=()=>goalForm();
 
+/* ---- 今週の予定（スケジュールの指南） ----
+   wk：月〜日の7文字。S=筋トレの日、L=かるい日（おなか＋関節ほぐし）、W=歩く日、R=休みの日 */
+const WKP={'2':'SLRSLWR','3':'SLSLSWR','O':'SLSLSLR'};
+const WKT={S:'筋トレ',L:'かるい',W:'歩く',R:'休み'};
+const STRM=['both','base','chair','nojump','nbase','camera'];
+const wkOf=p=>(p.wk&&/^[SLWR]{7}$/.test(p.wk))?p.wk:WKP['3'];
+const LO=x=>{if(x&&typeof x==='object')return x;const a=String(x).split('|');return {d:a[0],tier:a[1],menu:a[2],level:a[3],pts:+a[4],t:+a[5]||0}};
+const dayLogs=(pid,d)=>(logs[pid]||[]).map(LO).filter(l=>l.d===d);
+const isStr=l=>STRM.includes(l.menu)&&!(l.sec!=null&&l.sec<300&&l.menu==='camera');
+function dayDone(pid,d,t){const L=dayLogs(pid,d);
+  if(t==='S')return L.some(isStr);
+  if(t==='L')return L.some(l=>['belly','joint','nbelly'].includes(l.menu)||STRM.includes(l.menu));
+  if(t==='W')return L.some(l=>l.menu==='stand'||STRM.includes(l.menu));
+  return L.length>0}
+function hardDay(pid,d){const L=dayLogs(pid,d).filter(isStr);return L.some(l=>l.level==='hard')||L.reduce((a,l)=>a+(l.sec||0),0)>=1200}
+function todayPlan(p){
+  const now=new Date(),di=(now.getDay()+6)%7,today=dkey(now),y=dkey(addD(now,-1)),wk=wkOf(p);
+  let t=wk[di],why='';
+  const L=(logs[p.id]||[]).map(LO);
+  const last=L.length?L.map(l=>l.d).sort().slice(-1)[0]:null,gap=last?dBetween(last,today):99;
+  if(t==='S'&&dayLogs(p.id,y).some(isStr)){t='L';why=hardDay(p.id,y)?'きのう筋トレをしっかりしたので、今日は筋肉を休ませる「かるい日」にしましょう。筋肉は休んでいる間に強くなります。':'きのうも筋トレをしたので、今日は「かるい日」にして、間を1日あけましょう。'}
+  const back=gap>=4&&gap<99;
+  return {t,why,back,done:dayDone(p.id,today,t),gap}
+}
+function planSettings(p,t,back){
+  const sm=STRM.includes(p.menu)&&p.menu!=='camera'?p.menu:'both';
+  const lv=back?'light':(p.level==='hard'?'hard':p.level||'normal');
+  if(t==='S')return {menu:sm,level:lv,warm:'on',cool:'on',mins:'full'};
+  if(t==='L')return {menu:'belly',level:back?'light':'normal',warm:'on',cool:'off',mins:'full'};
+  if(t==='W')return {menu:'stand',level:back?'light':'normal',warm:'off',cool:'off',mins:'full'};
+  return {menu:'cool',level:'normal',warm:'off',cool:'off',mins:'full'};
+}
+function planPanel(){
+  const p=cur(),wk=wkOf(p),now=new Date(),di=(now.getDay()+6)%7,mon=addD(now,-di),today=dkey(now);
+  const strip=$('wkStrip');strip.innerHTML='';
+  '月火水木金土日'.split('').forEach((w,i)=>{const d=dkey(addD(mon,i)),t=wk[i],b=document.createElement('button');
+    b.className=`t-${t}${d===today?' today':''}${d<today?' past':''}`;
+    const done=dayDone(p.id,d,t),any=dayLogs(p.id,d).length>0;
+    b.innerHTML=`<small>${w} ${+d.slice(8)}</small><b>${WKT[t]}</b><i>${done?'✓':any?'・':''}</i>`;
+    b.setAttribute('aria-label',`${w}曜日 ${fmtD(d)}：${WKT[t]}の日${done?'（できました）':''}。押すと予定を変えます`);
+    b.onclick=()=>{const o='SLWR',a=wkOf(p).split('');a[i]=o[(o.indexOf(a[i])+1)%4];p.wk=a.join('');savePeople();planPanel()};
+    strip.appendChild(b)});
+  press($('wkPreset'),Object.keys(WKP).find(k=>WKP[k]===wk)||'');
+  const cs=[...wk+wk[0]].some((c,i,a)=>i<7&&c==='S'&&a[i+1]==='S'),ns=[...wk].filter(c=>c==='S').length,nr=[...wk].filter(c=>c==='R').length;
+  const warn=[cs?'筋トレの日が2日続いています。間に「かるい日」をはさむと効果的です。':'',ns>4?'筋トレの日が多めです。週2〜3日で十分効果があります。':'',ns===0?'筋トレの日がありません。週2日以上入れましょう。':'',nr===0?'休みの日がありません。週1日は休みましょう。':''].filter(Boolean);
+  $('wkWarn').hidden=!warn.length;$('wkWarn').textContent=warn.join(' ');
+  const tp=todayPlan(p),st=planSettings(p,tp.t,tp.back);
+  const name={S:`筋トレの日：${CAT[st.menu]||'①＋② 両方'}`,L:'かるい日：②おなか＋関節ほぐし',W:'歩く日：外を20〜40分、または③立ったまま',R:'休みの日：⑥ストレッチだけ（何もしなくてもOK）'}[tp.t];
+  const tips={S:[`${TIERNAME[p.tier]}メニュー・強さ「${({light:'かるめ',normal:'ふつう',hard:'しっかり'})[st.level]}」。ウォームアップとクールダウンを付けます。`,'時間帯は昼〜夕方が一番向いています。','最後の数回が「ややきつい」くらいがちょうどよい強さです。'],
+    L:['朝は⑦関節ほぐしで体をほぐし、昼か夜に②おなかを。','おなかは毎日やってもかまいません。上体起こしの回数アップにつながります。',...(campOn(p)&&p.camp.goal==='belly'?['おなか作戦中：少し息がはずむ速さで30〜40分歩きましょう。脂肪を燃やすのは、歩くことと食事です。']:[])],
+    W:['外を歩くときは、少し速めに、腕を振って。','雨の日や外出先では③立ったままメニューを。'],
+    R:['筋肉が回復して強くなる日です。','寝る前に⑥ストレッチをすると、足がつりにくくなります。',...(campOn(p)&&p.camp.goal==='belly'?['休みの日も、ゆっくり散歩くらいはしてかまいません。']:[])]}[tp.t];
+  const L=(logs[p.id]||[]).map(LO),tl=(tests[p.id]||[]),lt=tl.length?tl.map(x=>x.d).sort().slice(-1)[0]:null,testDue=!lt||dBetween(lt,today)>=28;
+  $('todayCard').innerHTML=`<span class="hint">今日（${fmtD(today)}）の${esc(p.name)}さん</span><h3>${tp.done?'✓ ':''}${esc(name)}</h3>
+    ${tp.done?'<p><b>今日の予定は終わりました。おつかれさまでした。</b></p>':''}
+    ${tp.why?`<p>${esc(tp.why)}</p>`:''}${tp.back?`<p>${tp.gap}日ぶりの運動です。体を慣らすため、今日は「かるめ」から始めましょう。</p>`:''}
+    <ul>${tips.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>
+    ${testDue?`<p><b>${lt?'前回の体力測定から4週間たちました。':'まだ体力測定をしていません。'}</b>今日か近いうちに体力測定（約3分）を。 <button class="link" id="tdTest">体力測定へ</button></p>`:''}
+    ${tp.done?'':`<button class="big" id="tdUse">このメニューにする</button>`}`;
+  if($('tdUse'))$('tdUse').onclick=()=>{Object.assign(p,st);savePeople();paint();say(`${p.name}さん、今日は${({S:'筋トレの日',L:'かるい日',W:'歩く日',R:'休みの日'})[tp.t]}です。メニューを合わせました。`);setTimeout(()=>$('menuPanel').scrollIntoView({block:'start'}),60)};
+  if($('tdTest'))$('tdTest').onclick=()=>$('fitBtn').scrollIntoView({block:'center'});
+}
+/* ---- 大作戦（1〜3か月の目標と、その管理） ----
+   p.camp = {goal:'belly'|'strong', start:'YYYY-MM-DD', months, base:{…}, tgt:{…}}（変えるときは必ず新しいオブジェクトにする） */
+const CM={kg:['体重','kg',-1],waist:['腹囲','cm',-1],fat:['体脂肪率','%',-1],su:['上体起こし','回',1],cs:['椅子立ち上がり','回',1]};
+const CGOAL={belly:'おなか・体重を落とす',strong:'体力・筋力をつける'};
+const campOn=p=>!!(p&&p.camp&&p.camp.start&&p.camp.tgt);
+const campEnd=c=>{const d=kd(c.start);return dkey(new Date(d.getFullYear(),d.getMonth()+(+c.months||3),d.getDate()))};
+function latestVal(pid,k,from){
+  if(k==='su'||k==='cs'){const t=(tests[pid]||[]).filter(x=>x[k]!=null&&(!from||x.d>=from)).sort((a,b)=>(a.d+String(a.t||0)).localeCompare(b.d+String(b.t||0)));return t.length?{v:t[t.length-1][k],d:t[t.length-1].d}:null}
+  const w=(wlog[pid]||[]).filter(x=>x[k]!=null&&(!from||x.d>=from)).sort((a,b)=>(a.t||0)-(b.t||0));return w.length?{v:w[w.length-1][k],d:w[w.length-1].d}:null}
+function campSuggest(p,goal,months){
+  const b={};['kg','waist','fat','su','cs'].forEach(k=>{const x=latestVal(p.id,k);if(x)b[k]=x.v});
+  if(b.kg==null&&p.weight)b.kg=+p.weight;
+  return {b,t:campTgt(b,goal,months)};
+}
+function campTgt(b,goal,months){
+  const t={},wk=months*4.3,r1=x=>Math.round(x*10)/10;
+  if(goal==='belly'){
+    if(b.kg!=null){const dk=Math.min(Math.round(0.5*wk*2)/2,Math.round(b.kg*0.08*2)/2);t.kg=r1(b.kg-dk);
+      if(b.fat!=null){const fm=b.kg*b.fat/100-dk*0.85;t.fat=r1(Math.max(5,fm/t.kg*100))}
+      if(b.waist!=null)t.waist=r1(b.waist-Math.round(dk))}
+    if(b.su!=null)t.su=b.su+3*months;
+  }else{
+    if(b.su!=null)t.su=b.su+4*months;if(b.cs!=null)t.cs=b.cs+2*months;
+    if(b.kg!=null)t.kg=b.kg;
+  }
+  return t;
+}
+function campStat(p){
+  const c=p.camp,today=dkey(new Date()),end=campEnd(c),tot=Math.max(1,dBetween(c.start,end)),el=Math.min(tot,Math.max(0,dBetween(c.start,today))),pace=el/tot;
+  const rows=Object.keys(c.tgt).filter(k=>CM[k]&&c.base[k]!=null&&c.tgt[k]!=null&&c.tgt[k]!==c.base[k]).map(k=>{
+    const now=latestVal(p.id,k,c.start),b=c.base[k],t=c.tgt[k],v=now?now.v:null,pr=v==null?null:Math.max(0,Math.min(1.2,(v-b)/(t-b)));
+    const exp=(k==='su'||k==='cs')?Math.round(b+(t-b)*pace):Math.round((b+(t-b)*pace)*10)/10;
+    return {k,b,t,v,d:now&&now.d,pr,exp,ok:pr==null?null:pr>=pace-0.12}});
+  return {end,tot,el,pace,rows,done:today>=end};
+}
+function campPanel(){
+  const p=cur(),box=$('campBody');box.innerHTML='';
+  $('campTitle').textContent=campOn(p)?`${p.camp.months}か月大作戦（${esc(p.name)}さん）`:'1〜3か月の大作戦';
+  $('campSub').textContent=campOn(p)?CGOAL[p.camp.goal]:'';
+  if(campOn(p)){
+    const c=p.camp,st=campStat(p);
+    const head=document.createElement('p');
+    head.innerHTML=st.done?`<b>作戦期間が終わりました（${fmtD(c.start)}〜${fmtD(st.end)}）。</b>結果を見て、次の作戦を立てましょう。`
+      :`<b>${st.el+1}日目</b> / ${st.tot}日（${fmtD(c.start)}〜${fmtD(st.end)}）　あと${st.tot-st.el}日`;
+    box.appendChild(head);
+    if(!st.rows.length){const n=document.createElement('p');n.className='hint';n.textContent='目標の数値がありません。「作戦を立て直す」から目標を入れてください。';box.appendChild(n)}
+    st.rows.forEach(r=>{const [n,u,dir]=CM[r.k],d=document.createElement('div');d.className='cbar';
+      const status=r.v==null?'<small>まだ記録がありません</small>':st.done?(r.pr>=1?'<span class="cst-ok">達成！</span>':`<span class="cst-late">達成率 ${Math.round(r.pr*100)}%</span>`):(r.ok?'<span class="cst-ok">順調</span>':'<span class="cst-late">少しおくれ</span>');
+      d.innerHTML=`<div class="lab"><b>${n}</b><span>${r.b}${u} → <b>${r.t}${u}</b>　${status}</span></div>
+        <div class="track" role="img" aria-label="${n}：はじめ${r.b}${u}、いま${r.v??'未記録'}${r.v!=null?u:''}、目標${r.t}${u}"><div class="fill" style="width:${Math.round(Math.min(1,r.pr||0)*100)}%"></div>${st.done?'':`<div class="pace" style="left:calc(${Math.round(st.pace*100)}% - 1px)"></div>`}</div>
+        <small>いま ${r.v!=null?`${r.v}${u}（${fmtD(r.d)}）`:'—'}${st.done?'':`　今日の目安 ${r.exp}${u}`}</small>`;
+      box.appendChild(d)});
+    if(!st.done){const leg=document.createElement('p');leg.className='hint';leg.textContent='緑の帯が進み具合、オレンジの線が「今日までに進んでいたい位置」です。';box.appendChild(leg)}
+    /* 月ごとの目安 */
+    const ms=document.createElement('details');ms.className='guide-d';
+    const mm=[];for(let i=1;i<=c.months;i++){const f=i/c.months;mm.push(`<li><b>${i}か月後</b>（${fmtD(dkey(new Date(kd(c.start).getFullYear(),kd(c.start).getMonth()+i,kd(c.start).getDate())))}）：${Object.keys(c.tgt).filter(k=>CM[k]&&c.base[k]!=null&&c.tgt[k]!=null&&c.tgt[k]!==c.base[k]).map(k=>`${CM[k][0]} ${(k==='su'||k==='cs')?Math.round(c.base[k]+(c.tgt[k]-c.base[k])*f):Math.round((c.base[k]+(c.tgt[k]-c.base[k])*f)*10)/10}${CM[k][1]}`).join('・')}</li>`)}
+    const tips=c.goal==='belly'?['脂肪は体全体から減ります。おなかの運動だけでは落ちないので、<b>筋トレ＋毎日歩く＋食事</b>の3つで。','食事は1日300〜400kcal減らすのが目安（ごはんを茶碗2/3に、間食とお酒を半分に、夜9時以降は食べない）。減らしすぎは筋肉が落ちるので逆効果。','たんぱく質（肉・魚・卵・豆腐・納豆）は毎食しっかり。','<b>腹囲を週1回</b>、同じ条件で測ります。体重より、おなかの成果がよく分かります。','安全な減り方は週0.5kgくらい。急に落ちすぎるときは食事を少し戻します。']
+      :['筋トレは1日おきに、週3回。最後の数回が「ややきつい」強さで。','2週間ほど楽にできたら、強さを「しっかり」に、またはひとつ若い年代に上げます。','体力測定を月1回して、回数の伸びを確かめます。','たんぱく質（肉・魚・卵・豆腐・納豆）は毎食しっかり。筋肉の材料です。'];
+    ms.innerHTML=`<summary><h2 style="font-size:1.05rem">月ごとの目安と作戦のコツ</h2></summary><ul class="guide-list">${mm.join('')}</ul><ul class="guide-list">${tips.map(t=>`<li>${t}</li>`).join('')}</ul>`;
+    box.appendChild(ms);
+    const due=[];const lw=latestVal(p.id,'waist'),lk=latestVal(p.id,'kg');
+    if(c.goal==='belly'&&(!lw||dBetween(lw.d,dkey(new Date()))>=7))due.push('腹囲');
+    if(!lk||dBetween(lk.d,dkey(new Date()))>=7)due.push('体重');
+    if((c.tgt.su!=null||c.tgt.cs!=null)){const lt=(tests[p.id]||[]).map(x=>x.d).sort().slice(-1)[0];if(!lt||dBetween(lt,dkey(new Date()))>=28)due.push('体力測定')}
+    if(due.length&&!st.done){const b=document.createElement('button');b.className='ghost';b.textContent=`${due.join('・')}を測る日です`;b.onclick=()=>{if(due.length===1&&due[0]==='体力測定'){$('fitBtn').scrollIntoView({block:'center'});return}profile(p.id);setTimeout(()=>{const e=$('wPanel');e&&e.scrollIntoView({block:'start'})},50)};box.appendChild(b)}
+    const bt=document.createElement('div');bt.className='btns';
+    const re=document.createElement('button');re.className='ghost';re.textContent=st.done?'次の作戦を立てる':'作戦を立て直す';re.onclick=()=>campForm(p);
+    const st_=document.createElement('button');st_.className='ghost';st_.textContent='作戦をやめる';
+    st_.onclick=()=>{if(st_.dataset.c){p.camp=null;savePeople();paint()}else{st_.dataset.c='1';st_.textContent='本当にやめる（もう一度押す）'}};
+    bt.append(re,st_);box.appendChild(bt);
+  }else{
+    const n=document.createElement('p');n.textContent='「おなか・体重を落とす」「体力・筋力をつける」など、1〜3か月の目標を数字で立てて、毎週の進み具合を確かめます。家族ひとりひとりが自分の作戦を持てます。';box.appendChild(n);
+    const b=document.createElement('button');b.className='big';b.textContent=`${p.name}さんの作戦を立てる`;b.onclick=()=>campForm(p);box.appendChild(b);
+  }
+  /* 家族の作戦 */
+  const fam=people.filter(q=>campOn(q));
+  if(fam.length&&!(fam.length===1&&fam[0].id===p.id)){
+    const h=document.createElement('h3');h.textContent='家族の作戦';h.style.margin='4px 0 0';box.appendChild(h);
+    const l=document.createElement('div');l.className='cfam';
+    fam.forEach(q=>{const st=campStat(q),rs=st.rows.filter(r=>r.pr!=null),avg=rs.length?Math.round(rs.reduce((a,r)=>a+Math.min(1,r.pr),0)/rs.length*100):null;
+      const b=document.createElement('button');b.innerHTML=`<span><b>${esc(q.name)}</b>　${CGOAL[q.camp.goal]}</span><span>${st.done?'終了':`${st.el+1}日目`}${avg!=null?`・達成 ${avg}%`:''}</span>`;
+      if(q.id===p.id)b.style.borderColor='var(--accent)';
+      b.onclick=()=>{curId=q.id;savePeople();paint();setTimeout(()=>$('campPanel').scrollIntoView({block:'start'}),50)};l.appendChild(b)});
+    box.appendChild(l);
+  }
+}
+function campForm(p){
+  const box=$('campBody');let goal=(p.camp&&p.camp.goal)||'belly',months=(p.camp&&p.camp.months)||3;
+  const draw=()=>{
+    const {b,t}=campSuggest(p,goal,months),keys=goal==='belly'?['kg','waist','fat','su']:['su','cs','kg'];
+    box.innerHTML=`<div class="cform"><h3 style="margin:0">${esc(p.name)}さんの作戦</h3>
+      <div class="row"><label id="l-cg">目的</label><div class="seg" role="group" aria-labelledby="l-cg" id="cGoal"><button data-v="belly">おなか・体重を落とす</button><button data-v="strong">体力・筋力をつける</button></div></div>
+      <div class="row"><label id="l-cm">期間</label><div class="seg" role="group" aria-labelledby="l-cm" id="cMon"><button data-v="1">1か月</button><button data-v="2">2か月</button><button data-v="3">3か月</button></div></div>
+      <p class="hint">いまの値は、最新の記録から入れています。目標は無理のない目安を自動で入れています（体重は週0.5kgまで）。自由に直せます。空欄の項目は使いません。</p>
+      <div class="tg">${keys.map(k=>`<label>${CM[k][0]}（いま）<span><input class="tx" type="number" step="0.1" id="cb_${k}" value="${b[k]??''}" placeholder="${k==='su'||k==='cs'?'体力測定':'記録'}">${CM[k][1]}</span></label><label>${CM[k][0]}（目標）<span><input class="tx" type="number" step="0.1" id="ct_${k}" value="${t[k]??''}">${CM[k][1]}</span></label>`).join('')}</div>
+      ${goal==='belly'&&b.waist==null?'<p class="hint">腹囲（おへその高さのおなか回り）をメジャーで測って入れると、おなかの成果がいちばんよく分かります。</p>':''}
+      ${b.su==null&&b.cs==null?'<p class="hint">体力測定の記録がまだありません。作戦の最初に体力測定（約3分）をすると、回数の目標も立てられます。</p>':''}
+      <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="cWk" ${goal==='belly'?'checked':''}> 今週の予定を「${goal==='belly'?'おなか作戦（毎日歩く）':'筋トレ週3回'}」にする</label>
+      <div class="btns"><button class="big" id="cSave">この作戦ではじめる</button><button class="ghost" id="cCancel">やめる</button></div>
+      <p class="hint" id="cMsg"></p></div>`;
+    press($('cGoal'),goal);press($('cMon'),String(months));
+    $('cGoal').querySelectorAll('button').forEach(x=>x.onclick=()=>{goal=x.dataset.v;draw()});
+    $('cMon').querySelectorAll('button').forEach(x=>x.onclick=()=>{months=+x.dataset.v;draw()});
+    $('cCancel').onclick=()=>campPanel();
+    keys.forEach(k=>{$('ct_'+k).dataset.auto='1';$('ct_'+k).oninput=e=>{e.target.dataset.auto=''};
+      $('cb_'+k).oninput=()=>{const b2={};keys.forEach(j=>{const v=parseFloat($('cb_'+j).value);if(!isNaN(v))b2[j]=v});const t2=campTgt(b2,goal,months);
+        keys.forEach(j=>{const el=$('ct_'+j);if(el.dataset.auto==='1')el.value=t2[j]??''})}});
+    $('cSave').onclick=()=>{const base={},tgt={};
+      keys.forEach(k=>{const bv=parseFloat($('cb_'+k).value),tv=parseFloat($('ct_'+k).value);if(!isNaN(bv))base[k]=bv;if(!isNaN(bv)&&!isNaN(tv))tgt[k]=tv});
+      if(!Object.keys(tgt).length){$('cMsg').textContent='いまの値と目標を、少なくとも1つ入れてください。';return}
+      const today=dkey(new Date());
+      /* 腹囲などを新しく入れたときは、体の記録にも残す */
+      const newW={};['kg','waist','fat'].forEach(k=>{if(base[k]!=null&&(latestVal(p.id,k)||{}).v!==base[k])newW[k]=base[k]});
+      if(Object.keys(newW).length){const e={d:today,t:Date.now(),...newW};const kg0=newW.kg??(latestVal(p.id,'kg')||{}).v??(+p.weight||null);if(kg0!=null)e.kg=kg0;(wlog[p.id]||(wlog[p.id]=[])).push(e);store.set('kt-wlog',wlog);if(newW.kg!=null)p.weight=newW.kg}
+      p.camp={goal,months,start:today,base,tgt};if($('cWk').checked)p.wk=WKP[goal==='belly'?'O':'3'];
+      savePeople();paint();say(`${p.name}さんの${months}か月大作戦をはじめます。がんばりましょう。`);setTimeout(()=>$('campPanel').scrollIntoView({block:'start'}),50)};
+  };
+  draw();
+}
+$('wkPreset').querySelectorAll('button').forEach(b=>b.onclick=()=>{const p=cur();p.wk=WKP[b.dataset.v];savePeople();planPanel()});
+
 function guidePanel(){
   const p=cur(),old=+p.tier>=60,ul=$('gdWeek');
   $('gdTitle').textContent=old?'1週間の目安（65歳以上）':'1週間の目安（大人）';
@@ -1427,16 +1663,16 @@ function svgKcal(pid){
 
 /* ---- weight log ---- */
 /* 体組成計の項目（体重のほかは任意） */
-const COMP=[['kg','体重','kg',1,-1],['fat','体脂肪率','%',1,-1],['smr','骨格筋率','%',1,1],['mkg','筋肉量','kg',1,1],['vf','内臓脂肪','',0,-1],['bmr','基礎代謝','kcal',0,1]];
+const COMP=[['kg','体重','kg',1,-1],['waist','腹囲','cm',1,-1],['fat','体脂肪率','%',1,-1],['smr','骨格筋率','%',1,1],['mkg','筋肉量','kg',1,1],['vf','内臓脂肪','',0,-1],['bmr','基礎代謝','kcal',0,1]];
 function addWeight(pid,kg,setPerson,ext){
   const q=people.find(x=>x.id===pid);const d=dkey(new Date());
   (wlog[pid]||(wlog[pid]=[])).push({d,kg:Math.round(kg*10)/10,t:Date.now(),...(ext||{})});store.set('kt-wlog',wlog);
   if(setPerson&&q&&q.weight!==kg){q.weight=Math.round(kg*10)/10;savePeople()}
 }
-function weightPoints(pid){const by=new Map();(wlog[pid]||[]).forEach(w=>{const o=by.get(w.d);if(!o||w.t>o.t)by.set(w.d,w)});return [...by.values()].sort((a,b)=>a.d<b.d?-1:1)}
+function weightPoints(pid){const by=new Map();(wlog[pid]||[]).forEach(w=>{const o=by.get(w.d);by.set(w.d,!o?w:(w.t>o.t?{...o,...w}:{...w,...o}))});return [...by.values()].sort((a,b)=>a.d<b.d?-1:1)}
 function weightDue(pid){const w=weightPoints(pid);if(!w.length)return {due:true,days:null};const n=dBetween(w[w.length-1].d,dkey(new Date()));return {due:n>=7,days:n}}
 function weightSummary(pid){
-  const w=weightPoints(pid);if(!w.length)return '<p class="lead">まだ記録がありません。下に今日の体重を入れてください。</p>';
+  const w=weightPoints(pid).filter(x=>x.kg!=null);if(!w.length)return '<p class="lead">まだ記録がありません。下に今日の体重を入れてください。</p>';
   const l=w[w.length-1],f=w[0],ch=Math.round((l.kg-f.kg)*10)/10,due=weightDue(pid);
   return `<div class="gnum"><b>${l.kg}</b> kg　<span class="hint">${fmtD(l.d)}（${due.days===0?'今日':due.days+'日前'}）</span></div>`+
     (w.length>1?`<p>最初の記録（${fmtD(f.d)}）から <b class="${ch<=0?'upc':'dnc'}">${ch>0?'＋':ch<0?'－':'±'}${Math.abs(ch)}kg</b></p>`:'')+
@@ -1543,9 +1779,9 @@ function profile(pid){
     <input type="file" id="wPic" accept="image/*" hidden>
     <p class="hint" id="wScanMsg">体重計アプリの結果画面をスクリーンショットして選ぶと、数値を読み取って下の欄に入れます（インターネットが必要。はじめては準備に少し時間がかかります）。</p>
     <div class="wgrid">
-     ${COMP.map(([k,n,u])=>`<label>${n}<span><input id="w_${k}" class="tx" type="number" inputmode="decimal" step="${k==='bmr'||k==='vf'?1:0.1}" placeholder="${{kg:'例：65.7',fat:'例：19.8',smr:'例：51.8',mkg:'例：50',vf:'例：6',bmr:'例：1507'}[k]}">${u||'<span class="hint">レベル</span>'}</span></label>`).join('')}
+     ${COMP.map(([k,n,u])=>`<label>${n}<span><input id="w_${k}" class="tx" type="number" inputmode="decimal" step="${k==='bmr'||k==='vf'?1:0.1}" placeholder="${{kg:'例：65.7',waist:'例：88',fat:'例：19.8',smr:'例：51.8',mkg:'例：50',vf:'例：6',bmr:'例：1507'}[k]}">${u||'<span class="hint">レベル</span>'}</span></label>`).join('')}
     </div>
-    <p class="hint">体重のほかは、体組成計（体脂肪などが出る体重計）がなければ空欄のままでかまいません。</p>
+    <p class="hint">体重のほかは、なければ空欄のままでかまいません。腹囲は、立って軽く息をはいたときの、おへその高さのおなか回りです（メジャーで）。</p>
     <button class="big" id="wSave">記録する</button>
     <p class="hint" id="wMsg">週1回、同じ曜日の同じ条件（朝、トイレのあと・朝食前など）で測ると、変化が分かりやすくなります。体組成計（体脂肪などが出る体重計）は、体の水分で数値が変わりやすいので、1回ごとより流れを見てください。</p>
     ${(()=>{const av=COMP.filter(c=>compPts(pid,c[0]).length>=2);if(!av.length)return '<p class="hint">2回以上記録すると、グラフが出ます。</p>';if(!av.some(c=>c[0]===wMet))wMet=av[0][0];
@@ -1608,7 +1844,7 @@ async function ocrImage(file,onMsg){
   try{const {data}=await w.recognize(cv);window.__ocrText=data.text;return data.text}finally{w.terminate()}
 }
 /* 体重計アプリの画面写真の文字（OCR）から、体重・体脂肪率・骨格筋率・筋肉量・内臓脂肪・基礎代謝を取り出す */
-const SCALE_RANGE={kg:[20,200],fat:[3,60],smr:[15,70],mkg:[10,120],vf:[1,30],bmr:[600,4000]};
+const SCALE_RANGE={kg:[20,200],waist:[40,160],fat:[3,60],smr:[15,70],mkg:[10,120],vf:[1,30],bmr:[600,4000]};
 function scaleNum(line){
   if(/\d{6,}/.test(line)||/20\d\d\s*[\/年]/.test(line))return null; // 日付
   const re=/(\d{1,4}(?:[.,]\d{1,2})?)\s*(kcal|kcai|kca|ksa|kg|ks|k9|kq|ka|xs|g|%|x|s)?/gi;let best=null,m;
