@@ -432,11 +432,12 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
   <p class="hint">体力年齢の判定基準：中谷敏昭ら「30秒椅子立ち上がりテスト（CS-30テスト）成績の加齢変化と標準値の作成」臨床スポーツ医学 20(3), 2003／文部科学省「体力・運動能力調査」年齢別平均値（上体起こし）。判定は目安で、医学的な診断ではありません。持病のある方は、運動を始める前に医師に相談してください。</p>
   <section class="panel" aria-label="バージョン情報">
     <details class="guide-d">
-      <summary><h2>バージョン 4.4<small class="vdate">（2026年11月18日）</small></h2></summary>
+      <summary><h2>バージョン 4.5<small class="vdate">（2026年11月18日）</small></h2></summary>
       <div class="gd">
         <div class="tbl"><table>
           <thead><tr><th>版</th><th>日付</th><th>おもな変更</th></tr></thead>
           <tbody>
+            <tr><th>4.5</th><td>11/18</td><td>同期で同じ記録が二重になっていたのを、自動で1つにまとめるように修正</td></tr>
             <tr><th>4.4</th><td>11/18</td><td>⑥ストレッチに「腰割り」を追加（股関節をやわらかく）。⑦の名前を「関節ほぐし（ウォームアップ）」に。声の「左」が「さん」と読まれるのを「ひだり」に直した</td></tr>
             <tr><th>4.3</th><td>11/18</td><td>カレンダーの日付を押すと、その日にやったメニュー（時刻・時間・回数・距離・カロリー・ポイント）と、体力測定・体の記録が出る。前の月も見られる</td></tr>
             <tr><th>4.2</th><td>11/18</td><td>自転車を追加：時間・距離（GPS）・平均と最高の速さ・消費カロリー・ポイントを記録（ふつう／電動アシストを選べる）。計らずに乗った時間だけの記録も</td></tr>
@@ -1403,7 +1404,16 @@ function ptsOf(tier,menu,level,mins){
   return Math.round(W[tier]*(menu==='both'||menu==='nojump'?1:.5)*LV[level]*10)/10}
 const fmtP=n=>String(Math.round(n*10)/10);
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let logs=store.get('kt-logs',{}),goals=store.get('kt-goals',{}),ghist=store.get('kt-goalhist',{}),wlog=store.get('kt-wlog',{});
+/* 同じ記録（同じ日・メニュー・時刻）が2つあれば、項目の多いほうを1つだけ残す（古い版との同期で二重になった分） */
+function dedupLogArr(arr){const by=new Map(),out=[];
+  (arr||[]).forEach(x=>{let k=null;
+    if(x&&typeof x==='object'){if(x.t)k=`${x.d}|${x.menu}|${x.t}`}else{const a=String(x).split('|');if(+a[5])k=`${a[0]}|${a[2]}|${a[5]}`}
+    if(k==null){out.push(x);return}
+    const o=by.get(k);if(o==null){by.set(k,out.length);out.push(x);return}
+    const sz=v=>v&&typeof v==='object'?Object.keys(v).length:1;if(sz(x)>sz(out[o]))out[o]=x});
+  return out}
+const dedupLogs=L=>{const r={};for(const k in L||{})r[k]=dedupLogArr(L[k]);return r};
+let logs=dedupLogs(store.get('kt-logs',{})),goals=store.get('kt-goals',{}),ghist=store.get('kt-goalhist',{}),wlog=store.get('kt-wlog',{});
 function saveG(){store.set('kt-logs',logs);store.set('kt-goals',goals);store.set('kt-goalhist',ghist)}
 const kd=k=>{const [y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d)};
 const addD=(d,n)=>{const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()+n);return x};
@@ -2431,6 +2441,7 @@ function applyState(d){
   people=Array.isArray(d.people)&&d.people.length?d.people:people;
   recs=d.recs||{};tests=d.tests||{};goals=d.goals||{};ghist=d.ghist||{};wlog=d.wlog||{};dels=d.dels||[];gdel=d.gdel||{};pSnap=new Map(people.map(q=>[q.id,pkey(q)]));
   logs={};const L=d.logs||{};for(const k in L)logs[k]=L[k].map(x=>{if(x&&typeof x==='object')return {...x};const a=String(x).split('|');const o={d:a[0],tier:a[1],menu:a[2],level:a[3],pts:+a[4]};if(a[5]&&+a[5])o.t=+a[5];if(a[6])o.mins=a[6];return o});
+  logs=dedupLogs(logs);
   try{for(const [k,v] of [['kt-people',people],['kt-recs',recs],['kt-tests',tests],['kt-logs',logs],['kt-goals',goals],['kt-goalhist',ghist],['kt-dels',dels],['kt-gdel',gdel],['kt-wlog',wlog]])localStorage.setItem(k,JSON.stringify(v))}catch(e){}
   if(d.mt)lsSet('kt-mtime',String(d.mt));
   syncApplying=false;
@@ -2462,7 +2473,7 @@ function mergeDocs(a,b){
     const dt=Math.max((a.gdel||{})[k]||0,(b.gdel||{})[k]||0);if(dt)gdel[k]=dt;
     if(best&&(dt===0||(best.u||0)>dt))goals[k]=best;
   });
-  return {v:3,mt:Math.max(a.mt||0,b.mt||0),people,recs:per('recs'),tests:per('tests'),logs:per('logs'),goals,ghist:per('ghist'),wlog:per('wlog'),dels:[...dl].sort(),gdel};
+  return {v:3,mt:Math.max(a.mt||0,b.mt||0),people,recs:per('recs'),tests:per('tests'),logs:dedupLogs(per('logs')),goals,ghist:per('ghist'),wlog:per('wlog'),dels:[...dl].sort(),gdel};
 }
 const canon=x=>{const c=mergeDocs(x,x);delete c.mt;return JSON.stringify(c)};
 function onHome(){return !$('home').hidden}
