@@ -418,11 +418,12 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
   <p class="hint">体力年齢の判定基準：中谷敏昭ら「30秒椅子立ち上がりテスト（CS-30テスト）成績の加齢変化と標準値の作成」臨床スポーツ医学 20(3), 2003／文部科学省「体力・運動能力調査」年齢別平均値（上体起こし）。判定は目安で、医学的な診断ではありません。持病のある方は、運動を始める前に医師に相談してください。</p>
   <section class="panel" aria-label="バージョン情報">
     <details class="guide-d">
-      <summary><h2>バージョン 4.1<small class="vdate">（2026年11月17日）</small></h2></summary>
+      <summary><h2>バージョン 4.2<small class="vdate">（2026年11月18日）</small></h2></summary>
       <div class="gd">
         <div class="tbl"><table>
           <thead><tr><th>版</th><th>日付</th><th>おもな変更</th></tr></thead>
           <tbody>
+            <tr><th>4.2</th><td>11/18</td><td>自転車を追加：時間・距離（GPS）・平均と最高の速さ・消費カロリー・ポイントを記録（ふつう／電動アシストを選べる）。計らずに乗った時間だけの記録も</td></tr>
             <tr><th>4.1</th><td>11/17</td><td>歩いた距離と歩数が同期・バックアップで消えていたのを修正。歩く・足踏み・関節ほぐし・ストレッチのポイントは、選んでいる年代ではなく本人の年齢で計算</td></tr>
             <tr><th>4.0</th><td>11/17</td><td>外歩きの計測：スタート・一時停止・終了で時間を計り、歩数（スマホの動きセンサー）・距離（GPS）・速さ・消費カロリー・ポイントを記録。10分ごとに声でお知らせ</td></tr>
             <tr><th>3.9</th><td>11/17</td><td>⑧ 足踏み（家の中で10分）を追加。かるい日・歩く日は「家の中で足踏み」か「外を歩く」を選べる。外を歩いた時間の記録。おなか作戦は「毎日少し動く」に</td></tr>
@@ -521,21 +522,32 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
     <h2 id="wkTitle">歩く準備</h2>
   </div>
   <div class="panel" id="wkSetup">
+    <div class="seg" role="group" aria-label="種類" id="wkKind"><button data-v="walk">歩く</button><button data-v="bike">自転車</button></div>
+    <div id="wkBikeRow" class="row" hidden><label id="l-eb">自転車の種類</label><div class="seg" role="group" aria-labelledby="l-eb" id="wkEbike"><button data-v="0">ふつうの自転車</button><button data-v="1">電動アシスト</button></div></div>
+    <div id="wkHowWalk">
     <p>スタートを押してから歩き始め、帰ってきたら「終了して記録」を押します。時間・歩数・距離（GPS）・消費カロリー・ポイントを記録します。</p>
     <ul class="guide-list">
       <li>スマホは<b>ポケットか手に持って</b>歩いてください。</li>
       <li><b>画面はつけたまま</b>がおすすめです（自動で消えないようにします）。画面を消すと、機種によっては歩数と距離が止まります。時間は正しく計れます。</li>
       <li>はじめての時は「位置情報」と「動きと向き」の使用を聞かれます。「許可」を押してください。位置はこの端末の中だけで使い、どこにも送りません。</li>
-    </ul>
+    </ul></div>
+    <div id="wkHowBike" hidden>
+    <p>スタートを押してから出発し、帰ってきたら「終了して記録」を押します。時間・距離（GPS）・平均と最高の速さ・消費カロリー・ポイントを記録します。</p>
+    <ul class="guide-list">
+      <li><b>乗っている間は、スマホを見たりさわったりしないでください。</b>かばんやポケットに入れたままで大丈夫です。10分ごとに声でお知らせします。</li>
+      <li>信号待ちや休けいは、止まったまま「一時停止」を押すか、そのままでもかまいません（止まっている間の距離は足しません）。</li>
+      <li>画面を消すと、機種によっては距離が止まります。時間は正しく計れます。</li>
+      <li>ヘルメットをかぶり、無理のない速さで。ペダルが軽く回る、少し息がはずむくらいの強さが、脂肪を燃やすのにちょうどよい強さです。</li>
+    </ul></div>
     <button class="big" id="wkGo">スタート</button>
     <button class="ghost" id="wkBack">もどる</button>
   </div>
   <div class="panel" id="wkLive" hidden>
-    <div class="wkbig"><b id="wkTime">0:00</b><span>歩いた時間</span></div>
+    <div class="wkbig"><b id="wkTime">0:00</b><span id="wkTimeL">歩いた時間</span></div>
     <div class="wkgrid">
       <div><b id="wkDist">0.00</b><span>km（GPS）</span></div>
-      <div><b id="wkSteps">0</b><span>歩</span></div>
-      <div><b id="wkSpeed">—</b><span>km/時</span></div>
+      <div><b id="wkSteps">0</b><span id="wkStepsL">歩</span></div>
+      <div><b id="wkSpeed">—</b><span>km/時（平均）</span></div>
       <div><b id="wkKc">0</b><span>kcal</span></div>
     </div>
     <p class="hint" id="wkStat" aria-live="polite"></p>
@@ -576,7 +588,7 @@ if(!people){people=[{id:'p1',name:'わたし',tier:'60',menu:'both',level:'norma
 recs=recs||{};
 let curId=store.get('kt-cur',people[0].id);
 const cur=()=>people.find(p=>p.id===curId)||people[0];
-const PF=['name','age','sex','tier','kind','menu','level','weight','mins','cool','warm','wk','camp'];
+const PF=['name','age','sex','tier','kind','menu','level','weight','mins','cool','warm','wk','camp','ebike'];
 const pkey=q=>{const o={};PF.forEach(f=>o[f]=q[f]??null);return o};
 let pSnap=new Map(people.map(q=>[q.id,pkey(q)]));
 /* 変更した項目にだけ変更時刻を付ける（q.uf）。同期のとき、項目ごとに新しい方を使う */
@@ -758,7 +770,7 @@ const MENUS={
    march(60),
    altTwist(true)]}
 };
-const CAT={base:'基本メニュー',belly:'おなかメニュー',stand:'立ったままメニュー',chair:'椅子中心メニュー',nbase:'基本（ジャンプなし）',nbelly:'おなか（ジャンプなし）',cool:'ストレッチ（クールダウン）',joint:'関節ほぐし',step:'足踏み（家の中で10分）',walk:'外歩き'};
+const CAT={base:'基本メニュー',belly:'おなかメニュー',stand:'立ったままメニュー',chair:'椅子中心メニュー',nbase:'基本（ジャンプなし）',nbelly:'おなか（ジャンプなし）',cool:'ストレッチ（クールダウン）',joint:'関節ほぐし',step:'足踏み（家の中で10分）',walk:'外歩き',bike:'自転車'};
 /* ---- 立ったまま（外出先）：床・椅子を使わず、跳ばない。手すりや壁があれば支えにする ---- */
 const heelRaise=(reps,support)=>R({name:'かかと上げ',pic:'heel',reps,desc:support?'手すりや壁に手を添えて、かかとを上げて2秒キープ。':'かかとを真上に上げて2秒キープ、ゆっくり下ろす。',
   prepGuide:support?'手すりや壁に軽く手を添え、足を肩幅に開いて立ちます。':'足を肩幅に開いてまっすぐ立ちます。',prepSay:'かかと上げです。足を肩幅に開いて立ちましょう。',
@@ -1471,7 +1483,7 @@ $('goalBtn').onclick=()=>goalForm();
 /* ---- 今週の予定（スケジュールの指南） ----
    wk：月〜日の7文字。S=筋トレの日、L=かるい日（おなか＋関節ほぐし）、W=歩く日、R=休みの日 */
 const WKP={'2':'SLRSLWR','3':'SLSLSWR','O':'SLSLSLR'};
-const moveMin=(pid,d)=>Math.round(dayLogs(pid,d).filter(l=>['step','walk','stand'].includes(l.menu)).reduce((a,l)=>a+(l.sec||0),0)/60);
+const moveMin=(pid,d)=>Math.round(dayLogs(pid,d).filter(l=>['step','walk','stand','bike'].includes(l.menu)).reduce((a,l)=>a+(l.sec||0),0)/60);
 const WKT={S:'筋トレ',L:'かるい',W:'歩く',R:'休み'};
 const STRM=['both','base','chair','nojump','nbase','camera'];
 const wkOf=p=>(p.wk&&/^[SLWR]{7}$/.test(p.wk))?p.wk:WKP['3'];
@@ -1482,8 +1494,8 @@ function dayDone(pid,d,t){const L=dayLogs(pid,d);
   if(t==='S')return L.some(isStr);
   if(t==='L'){const q=people.find(x=>x.id===pid);
     if(campOn(q)&&q.camp.goal==='belly')return L.some(l=>['belly','nbelly'].includes(l.menu)||STRM.includes(l.menu))&&moveMin(pid,d)>=30;
-    return L.some(l=>['belly','joint','nbelly','step','walk'].includes(l.menu)||STRM.includes(l.menu))}
-  if(t==='W')return L.some(l=>['stand','step','walk'].includes(l.menu)||STRM.includes(l.menu));
+    return L.some(l=>['belly','joint','nbelly','step','walk','bike'].includes(l.menu)||STRM.includes(l.menu))}
+  if(t==='W')return L.some(l=>['stand','step','walk','bike'].includes(l.menu)||STRM.includes(l.menu));
   return L.length>0}
 function hardDay(pid,d){const L=dayLogs(pid,d).filter(isStr);return L.some(l=>l.level==='hard')||L.reduce((a,l)=>a+(l.sec||0),0)>=1200}
 function todayPlan(p){
@@ -1532,27 +1544,35 @@ function planPanel(){
     ${tp.done||tp.t==='W'?'':`<button class="big" id="tdUse">このメニューにする</button>`}
     ${(()=>{const mm=moveMin(p.id,today),bel=campOn(p)&&p.camp.goal==='belly',mv=tp.t==='W'||(tp.t==='L'&&bel);
       return `${mv?`<div><b>今日の動き方を選んでください</b>（どちらでもOK・組み合わせてもOK）</div>
-      <div class="seg" id="mvSeg"><button data-v="step">家の中で⑧足踏み10分</button><button data-v="walk">外を歩く</button></div>`
-      :`<button class="link" id="mvWalkOpen" style="align-self:flex-start">外を歩く（時間・歩数・距離を計る）</button>`}
-      <div id="walkBox" hidden><button class="big" id="walkStart">歩き始める（時間・歩数・距離を計る）</button>
-      <div><b>計らずに歩いたときは、時間だけ記録：</b></div>
-      <div class="btns" id="walkBtns">${[10,20,30,45].map(m=>`<button class="ghost" data-m="${m}">${m}分</button>`).join('')}</div><p class="hint" id="walkMsg"></p></div>
-      ${mm||bel?`<p>今日の足踏み・歩き：<b>${mm}分</b>${bel?`　（目安 30分${mm>=30?'　✓ できました':`、あと${30-mm}分`}）`:''}</p>`:''}`})()}`;
+      <div class="seg" id="mvSeg"><button data-v="step">家の中で⑧足踏み10分</button><button data-v="walk">外を歩く</button><button data-v="bike">自転車</button></div>`
+      :`<button class="link" id="mvWalkOpen" style="align-self:flex-start">外を歩く・自転車（時間・距離を計る）</button>`}
+      <div id="walkBox" hidden><div class="seg" id="wbKind"><button data-v="walk">歩く</button><button data-v="bike">自転車</button></div>
+      <button class="big" id="walkStart"></button>
+      <div><b id="wbManual"></b></div>
+      <div class="btns" id="walkBtns">${[10,20,30,45,60].map(m=>`<button class="ghost" data-m="${m}">${m}分</button>`).join('')}</div><p class="hint" id="walkMsg"></p></div>
+      ${mm||bel?`<p>今日の足踏み・歩き・自転車：<b>${mm}分</b>${bel?`　（目安 30分${mm>=30?'　✓ できました':`、あと${30-mm}分`}）`:''}</p>`:''}`})()}`;
   if($('tdUse'))$('tdUse').onclick=()=>{Object.assign(p,st);savePeople();paint();say(`${p.name}さん、今日は${({S:'筋トレの日',L:'かるい日',W:'歩く日',R:'休みの日'})[tp.t]}です。メニューを合わせました。`);setTimeout(()=>$('menuPanel').scrollIntoView({block:'start'}),60)};
   if($('tdTest'))$('tdTest').onclick=()=>$('fitBtn').scrollIntoView({block:'center'});
-  const openWalk=()=>{$('walkBox').hidden=false;$('walkBox').scrollIntoView({block:'nearest'})};
-  if($('mvWalkOpen'))$('mvWalkOpen').onclick=openWalk;
-  $('walkStart').onclick=()=>walkOpen();
+  const setKind=k=>{wbKind=k;press($('wbKind'),k);$('walkStart').textContent=k==='bike'?'自転車をこぎ始める（時間・距離・速さを計る）':'歩き始める（時間・歩数・距離を計る）';
+    $('wbManual').textContent=k==='bike'?'計らずに乗ったときは、時間だけ記録：':'計らずに歩いたときは、時間だけ記録：';
+    $('walkBtns').querySelectorAll('button').forEach(x=>{delete x.dataset.c;x.textContent=x.dataset.m+'分'});$('walkMsg').textContent=''};
+  const openWalk=k=>{setKind(k||wbKind);$('walkBox').hidden=false;$('walkBox').scrollIntoView({block:'nearest'})};
+  if($('mvWalkOpen'))$('mvWalkOpen').onclick=()=>openWalk();
+  $('wbKind').querySelectorAll('button').forEach(b=>b.onclick=()=>setKind(b.dataset.v));
+  $('walkStart').onclick=()=>walkOpen(wbKind);
   if($('mvSeg'))$('mvSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{press($('mvSeg'),b.dataset.v);
-    if(b.dataset.v==='walk'){openWalk();say('外を歩く日ですね。歩き始めるを押してから、出発してください。')}
+    if(b.dataset.v==='walk'){openWalk('walk');say('外を歩く日ですね。歩き始めるを押してから、出発してください。')}
+    else if(b.dataset.v==='bike'){openWalk('bike');say('自転車の日ですね。こぎ始めるを押してから、出発してください。')}
     else{Object.assign(p,{menu:'step',level:tp.back?'light':'normal',mins:'full'});savePeople();paint();setTimeout(()=>$('menuPanel').scrollIntoView({block:'start'}),60)}});
   $('walkBtns').querySelectorAll('button').forEach(b=>b.onclick=()=>{
     if(!b.dataset.c){$('walkBtns').querySelectorAll('button').forEach(x=>{delete x.dataset.c;x.textContent=x.dataset.m+'分'});b.dataset.c='1';b.textContent=`${b.dataset.m}分を記録する`;$('walkMsg').textContent='もう一度押すと記録します。';return}
-    const m=+b.dataset.m,now=Date.now(),kg=kgOf(p),kc=Math.round(1.05*(4.0-1)*m/60*kg*10)/10,pt=Math.round(ptsOf(ageTier(p),'both','normal',String(m))*0.5*10)/10;
+    const m=+b.dataset.m,now=Date.now(),kg=kgOf(p),bk=wbKind==='bike',met=bk?(p.ebike?3.5:5.0):4.0,kc=Math.round(1.05*(met-1)*m/60*kg*10)/10,pt=Math.round(ptsOf(ageTier(p),'both','normal',String(m))*0.5*10)/10;
     const days=recs[p.id]||(recs[p.id]=[]);if(!days.includes(today))days.push(today);
-    (logs[p.id]||(logs[p.id]=[])).push({d:today,tier:ageTier(p),menu:'walk',level:'normal',pts:pt,t:now,kg,kc,sec:m*60});
-    store.set('kt-recs',recs);saveG();say(`${p.name}さん、${m}分の歩きを記録しました。約${Math.round(kc)}キロカロリーです。`);paint()});
-  if(dayLogs(p.id,today).some(l=>l.menu==='walk')&&$('mvSeg'))press($('mvSeg'),'walk');
+    const e={d:today,tier:ageTier(p),menu:bk?'bike':'walk',level:'normal',pts:pt,t:now,kg,kc,sec:m*60};if(bk&&p.ebike)e.assist=1;
+    (logs[p.id]||(logs[p.id]=[])).push(e);
+    store.set('kt-recs',recs);saveG();say(`${p.name}さん、${m}分の${bk?'自転車':'歩き'}を記録しました。約${Math.round(kc)}キロカロリーです。`);paint()});
+  setKind(wbKind);
+  const tdl=dayLogs(p.id,today);if($('mvSeg')){if(tdl.some(l=>l.menu==='bike'))press($('mvSeg'),'bike');else if(tdl.some(l=>l.menu==='walk'))press($('mvSeg'),'walk')}
 }
 /* ---- 外を歩く：時間・歩数（加速度センサー）・距離（GPS）を計る ---- */
 /* 歩数：加速度（重力込み）の大きさから、歩くリズムの山を数える */
@@ -1571,30 +1591,36 @@ function hav(a,b){const R=6371000,r=x=>x*Math.PI/180,dl=r(b.lat-a.lat),dn=r(b.lo
 const walkMet=kmh=>kmh<3.2?2.8:kmh<4.0?3.0:kmh<4.8?3.5:kmh<5.6?4.3:kmh<6.4?5.0:6.0;
 
 /* 年代に関係しないメニュー（歩く・足踏み・関節ほぐし・ストレッチ）は、本人の年齢の年代でポイントを計算する */
-const NOTIER=['step','joint','cool','walk'];
+const NOTIER=['step','joint','cool','walk','bike'];
 const ageTier=q=>String(Math.min(70,Math.max(10,Math.floor((+q.age||60)/10)*10)));
 const clk=sec=>{sec=Math.floor(sec);const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),x=String(sec%60).padStart(2,'0');return h?`${h}:${String(m).padStart(2,'0')}:${x}`:`${m}:${x}`};
-let WK=null,wkTick=null,wkGeo=null,wkStep=null,wkMotionOn=false;
+let WK=null,wkTick=null,wkGeo=null,wkStep=null,wkMotionOn=false,wbKind='walk',wkKindSel='walk';
+const bikeMet=(kmh,as)=>{const m=kmh<16?4.0:kmh<19?6.8:kmh<22?8.0:kmh<25?10.0:12.0;return as?Math.max(3.0,m*0.7):m};
+const isBike=()=>WK&&WK.kind==='bike';
 const wkSave=()=>{try{if(WK)localStorage.setItem('kt-walk',JSON.stringify(WK));else localStorage.removeItem('kt-walk')}catch(e){}};
 const wkEl=()=>WK?Math.max(0,((WK.pausedAt||Date.now())-WK.start-WK.pAcc)/1000):0;
 const wkKmh=()=>{const h=wkEl()/3600;return WK&&WK.dist>30&&h>0?WK.dist/1000/h:null};
-function wkKcal(){const q=people.find(x=>x.id===WK.pid)||cur(),v=wkKmh();return 1.05*(walkMet(v??4.0)-1)*wkEl()/3600*kgOf(q)}
+function wkKcal(){const q=people.find(x=>x.id===WK.pid)||cur(),v=wkKmh(),met=isBike()?(v?bikeMet(v,WK.assist):(WK.assist?3.5:5.0)):walkMet(v??4.0);return 1.05*(met-1)*wkEl()/3600*kgOf(q)}
 function wkStepsShown(){if(WK.steps>0&&WK.motion)return {n:WK.steps,est:false};
   if(WK.dist>30)return {n:Math.round(WK.dist/0.65),est:true};return {n:Math.round(wkEl()/60*100),est:true}}
 function wkDraw(){if(!WK)return;
   $('wkTime').textContent=clk(wkEl());$('wkDist').textContent=(WK.dist/1000).toFixed(2);
-  const st=wkStepsShown();$('wkSteps').textContent=(st.est?'約':'')+st.n.toLocaleString();
+  $('wkTimeL').textContent=isBike()?'乗った時間':'歩いた時間';
+  if(isBike()){$('wkSteps').textContent=WK.vmax?(WK.vmax).toFixed(1):'—';$('wkStepsL').textContent='km/時（最高）'}
+  else{const st=wkStepsShown();$('wkSteps').textContent=(st.est?'約':'')+st.n.toLocaleString();$('wkStepsL').textContent='歩'}
   const v=wkKmh();$('wkSpeed').textContent=v?v.toFixed(1):'—';$('wkKc').textContent=Math.round(wkKcal());
   $('wkStat').textContent=[WK.pausedAt?'一時停止中':'',WK.gps==='ok'?'GPS：受信中':WK.gps==='wait'?'GPS：さがしています…（空の見える所で）':WK.gps==='no'?'GPS：使えません（距離は記録しません）':'',
-    WK.motion?'歩数：数えています':'歩数：センサーが使えないため、距離か時間からの推定'].filter(Boolean).join('　')}
+    isBike()?'':WK.motion?'歩数：数えています':'歩数：センサーが使えないため、距離か時間からの推定'].filter(Boolean).join('　')}
 function wkOnPos(pos){if(!WK||WK.pausedAt)return;const c=pos.coords,pt={lat:c.latitude,lon:c.longitude,t:Date.now()};
   if(c.accuracy>35){if(WK.gps!=='ok')WK.gps='wait';return}
   WK.gps='ok';
   if(!WK.last){WK.last=pt;return}
   const d=hav(WK.last,pt),dt=Math.max(1,(pt.t-WK.last.t)/1000);
   if(d<Math.max(5,c.accuracy*0.5))return;
-  if(d/dt>3.5){WK.last=pt;return}
-  WK.dist+=d;WK.last=pt}
+  const vmax=isBike()?14:3.5;                       // 自転車は時速50km、歩きは時速12.6kmまで
+  if(d/dt>vmax){WK.last=pt;return}
+  WK.dist+=d;WK.last=pt;
+  if(isBike()&&dt<=15&&d>=10){const v=d/dt*3.6;if(v>(WK.vmax||0)&&v<50)WK.vmax=Math.round(v*10)/10}}
 function wkMotion(e){if(!WK||WK.pausedAt)return;const a=e.accelerationIncludingGravity;if(!a||a.x==null)return;
   WK.motion=true;if(wkStep.feed(a.x,a.y,a.z,e.timeStamp||performance.now()))WK.steps=wkStep.n}
 function wkStartSensors(){
@@ -1602,22 +1628,26 @@ function wkStartSensors(){
     try{wkGeo=navigator.geolocation.watchPosition(wkOnPos,e=>{if(WK)WK.gps=e.code===1?'no':(WK.gps==='ok'?'ok':'wait')},{enableHighAccuracy:true,maximumAge:0,timeout:30000})}catch(e){WK.gps='no'}}
   else if(!navigator.geolocation)WK.gps='no';
   wkStep=makeStepper();wkStep.n=WK.steps||0;
-  if(!wkMotionOn){window.addEventListener('devicemotion',wkMotion);wkMotionOn=true}}
+  if(!isBike()&&!wkMotionOn){window.addEventListener('devicemotion',wkMotion);wkMotionOn=true}}
 function wkStopSensors(){try{wkGeo!=null&&navigator.geolocation.clearWatch(wkGeo)}catch(e){}wkGeo=null;
   if(wkMotionOn){window.removeEventListener('devicemotion',wkMotion);wkMotionOn=false}clearInterval(wkTick);wkTick=null;unwake()}
-function wkRun(){wkStartSensors();wake();$('wkSetup').hidden=true;$('wkLive').hidden=false;$('wkTitle').textContent='歩いています';
+function wkRun(){wkStartSensors();wake();$('wkSetup').hidden=true;$('wkLive').hidden=false;$('wkTitle').textContent=isBike()?'自転車で走っています':'歩いています';$('wkKicker').textContent=`${(people.find(x=>x.id===WK.pid)||cur()).name}さん・${isBike()?'自転車':'外を歩く'}`;
   $('wkPause').textContent=WK.pausedAt?'再開':'一時停止';
   let lastAnn=Math.floor(wkEl()/600);clearInterval(wkTick);
   wkTick=setInterval(()=>{wkDraw();wkSave();const k=Math.floor(wkEl()/600);
-    if(!WK.pausedAt&&k>lastAnn){lastAnn=k;say(`${k*10}分たちました。${WK.dist>100?`${(WK.dist/1000).toFixed(1)}キロメートル。`:''}${WK.motion?`${WK.steps}歩。`:''}その調子です。`)}},1000);wkDraw()}
-function walkOpen(){const p=cur();
+    if(!WK.pausedAt&&k>lastAnn){lastAnn=k;const v=wkKmh();say(`${k*10}分たちました。${WK.dist>100?`${(WK.dist/1000).toFixed(1)}キロメートル。`:''}${isBike()?(v?`平均時速${v.toFixed(0)}キロ。`:''):WK.motion?`${WK.steps}歩。`:''}その調子です。`)}},1000);wkDraw()}
+function wkSetKind(k){wkKindSel=k;const p=cur();press($('wkKind'),k);$('wkBikeRow').hidden=k!=='bike';$('wkHowWalk').hidden=k==='bike';$('wkHowBike').hidden=k!=='bike';
+  press($('wkEbike'),p.ebike?'1':'0');$('wkKicker').textContent=`${p.name}さん・${k==='bike'?'自転車':'外を歩く'}`;$('wkTitle').textContent=k==='bike'?'自転車の準備':'歩く準備'}
+function walkOpen(kind){
   if(WK){show('walk');wkRun();return}
-  $('wkKicker').textContent=`${p.name}さん・外を歩く`;$('wkTitle').textContent='歩く準備';$('wkSetup').hidden=false;$('wkLive').hidden=true;show('walk')}
+  wkSetKind(kind||'walk');$('wkSetup').hidden=false;$('wkLive').hidden=true;show('walk')}
+$('wkKind').querySelectorAll('button').forEach(b=>b.onclick=()=>wkSetKind(b.dataset.v));
+$('wkEbike').querySelectorAll('button').forEach(b=>b.onclick=()=>{const p=cur();p.ebike=b.dataset.v==='1'?1:0;savePeople();press($('wkEbike'),b.dataset.v)});
 $('wkBack').onclick=()=>{show('home');paint()};
 $('wkGo').onclick=async()=>{
   try{if(typeof DeviceMotionEvent!=='undefined'&&DeviceMotionEvent.requestPermission)await DeviceMotionEvent.requestPermission()}catch(e){}
-  WK={pid:cur().id,start:Date.now(),pAcc:0,pausedAt:0,dist:0,steps:0,last:null,gps:'',motion:false};wkSave();
-  say('スタートです。いってらっしゃい。');wkRun()};
+  const p=cur();WK={pid:p.id,kind:wkKindSel,assist:wkKindSel==='bike'&&p.ebike?1:0,start:Date.now(),pAcc:0,pausedAt:0,dist:0,steps:0,vmax:0,last:null,gps:'',motion:false};wkSave();
+  say(isBike()?'スタートです。安全運転で、いってらっしゃい。':'スタートです。いってらっしゃい。');$('wkTitle').textContent=isBike()?'自転車で走っています':'歩いています';wkRun()};
 $('wkPause').onclick=()=>{if(!WK)return;
   if(WK.pausedAt){WK.pAcc+=Date.now()-WK.pausedAt;WK.pausedAt=0;WK.last=null;$('wkPause').textContent='一時停止';say('再開します。')}
   else{WK.pausedAt=Date.now();$('wkPause').textContent='再開';say('一時停止しました。')}wkSave();wkDraw()};
@@ -1631,13 +1661,14 @@ $('wkStop').onclick=()=>{const b=$('wkStop');if(!b.dataset.c){b.dataset.c='1';b.
   if(sec<60){WK=null;wkSave();say('1分未満なので、記録しませんでした。');show('home');paint();return}
   const key=dkey(new Date()),pt=Math.round(ptsOf(ageTier(q),'both','normal',String(sec/60))*0.5*10)/10;
   const days=recs[q.id]||(recs[q.id]=[]);if(!days.includes(key))days.push(key);
-  const e={d:key,tier:ageTier(q),menu:'walk',level:'normal',pts:pt,t:Date.now(),kg,kc,sec,steps:st.n};if(st.est)e.stepEst=1;if(dist>0)e.dist=dist;
+  const bk=isBike(),vmx=WK.vmax;
+  const e={d:key,tier:ageTier(q),menu:bk?'bike':'walk',level:'normal',pts:pt,t:Date.now(),kg,kc,sec};if(!bk){e.steps=st.n;if(st.est)e.stepEst=1}else{if(vmx)e.vmax=vmx;if(WK.assist)e.assist=1}if(dist>0)e.dist=dist;
   (logs[q.id]||(logs[q.id]=[])).push(e);store.set('kt-recs',recs);saveG();WK=null;wkSave();
   const td=dayKcal(q.id,key);
   $('finTitle').textContent=`${q.name}さん、おかえりなさい`;
-  $('finText').textContent=`歩いた時間 ${mmss(sec)}　${dist>0?`距離 ${(dist/1000).toFixed(2)}km　`:''}${st.est?'約':''}${st.n.toLocaleString()}歩${v?`　平均 時速${v.toFixed(1)}km`:''}　＋${fmtP(pt)}ポイント`;
+  $('finText').textContent=`${bk?'自転車':'歩いた時間'} ${mmss(sec)}　${dist>0?`距離 ${(dist/1000).toFixed(2)}km　`:''}${bk?'':`${st.est?'約':''}${st.n.toLocaleString()}歩`}${v?`　平均 時速${v.toFixed(1)}km`:''}${bk&&vmx?`（最高 ${vmx}km）`:''}　＋${fmtP(pt)}ポイント`;
   $('finKcal').innerHTML=`<p>約<b>${Math.round(kc)}</b>kcal 消費（今日の合計 約${Math.round(td)}kcal）</p>`;
-  say(`${q.name}さん、おかえりなさい。${Math.round(sec/60)}分歩きました。${dist>100?`${(dist/1000).toFixed(1)}キロメートル、`:''}${st.est?'およそ':''}${st.n}歩。約${Math.round(kc)}キロカロリー消費、${fmtP(pt)}ポイントです。${treatSay(td)}`);
+  say(`${q.name}さん、おかえりなさい。${Math.round(sec/60)}分${bk?'自転車に乗りました':'歩きました'}。${dist>100?`${(dist/1000).toFixed(1)}キロメートル、`:''}${bk?'':`${st.est?'およそ':''}${st.n}歩。`}約${Math.round(kc)}キロカロリー消費、${fmtP(pt)}ポイントです。${treatSay(td)}`);
   show('fin')};
 try{const w=JSON.parse(localStorage.getItem('kt-walk')||'null');if(w&&w.start&&Date.now()-w.start<6*3600e3){WK=w;setTimeout(()=>{walkOpen();say('歩いている途中です。続きから計ります。')},300)}else localStorage.removeItem('kt-walk')}catch(e){}
 
@@ -2334,7 +2365,7 @@ const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:v}catch
 const lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
 function gsCfg(){const url=lsGet('kt-gs-url',''),key=lsGet('kt-gs-key','');return url&&key?{url,key}:null}
 function packState(){
-  const L={};for(const k in logs)L[k]=logs[k].map(l=>l.kc!=null?{d:l.d,tier:l.tier,menu:l.menu,level:l.level,pts:l.pts,t:l.t,mins:l.mins,kg:l.kg,kc:l.kc,sec:l.sec,part:l.part,skip:l.skip,reps:l.reps,ex:l.ex,dist:l.dist,steps:l.steps,stepEst:l.stepEst}:(l.mins?[l.d,l.tier,l.menu,l.level,l.pts,l.t||0,l.mins]:l.t?[l.d,l.tier,l.menu,l.level,l.pts,l.t]:[l.d,l.tier,l.menu,l.level,l.pts]).join('|'));
+  const L={};for(const k in logs)L[k]=logs[k].map(l=>l.kc!=null?{d:l.d,tier:l.tier,menu:l.menu,level:l.level,pts:l.pts,t:l.t,mins:l.mins,kg:l.kg,kc:l.kc,sec:l.sec,part:l.part,skip:l.skip,reps:l.reps,ex:l.ex,dist:l.dist,steps:l.steps,stepEst:l.stepEst,vmax:l.vmax,assist:l.assist}:(l.mins?[l.d,l.tier,l.menu,l.level,l.pts,l.t||0,l.mins]:l.t?[l.d,l.tier,l.menu,l.level,l.pts,l.t]:[l.d,l.tier,l.menu,l.level,l.pts]).join('|'));
   return {v:3,mt:+lsGet('kt-mtime',0)||0,people,recs,tests,logs:L,goals,ghist,dels,gdel,wlog};
 }
 function applyState(d){
