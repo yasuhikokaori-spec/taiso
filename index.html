@@ -61,6 +61,17 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
 .cal .d{aspect-ratio:1;max-width:100%;display:grid;place-items:center;border-radius:50%;font-size:1rem;font-variant-numeric:tabular-nums}
 .cal .d.done{background:var(--warm);color:var(--surface);font-weight:700}
 .cal .d.today{outline:2px solid var(--accent);outline-offset:-2px}
+.cal button.d{border:0;background:none;color:inherit;font:inherit;cursor:pointer;padding:0;width:100%}
+.cal button.d.done{background:var(--warm);color:var(--surface)}
+.cal button.d.sel{box-shadow:0 0 0 3px var(--fg) inset}
+.calnav{display:flex;justify-content:space-between;gap:8px;margin:4px 0 8px}
+.calday{border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:10px;display:flex;flex-direction:column;gap:8px}
+.calday h3{margin:0;font-size:1.15rem}
+.calday ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.calday li{display:flex;gap:10px;align-items:baseline;border-bottom:1px dashed var(--line);padding-bottom:6px}
+.calday li .tm{font-variant-numeric:tabular-nums;color:var(--muted);min-width:3.2em}
+.calday li .bd{display:flex;flex-direction:column;gap:2px;min-width:0}
+.calday li small{color:var(--muted)}
 
 /* run screen */
 #run{min-height:calc(100vh - 80px);justify-content:space-between}
@@ -390,7 +401,10 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
 
   <section class="panel" aria-label="今月の記録">
     <div class="cal-head"><h2 id="calTitle">今月の記録</h2><span>やった日 <strong id="calCount">0</strong> 日</span></div>
+    <div class="calnav"><button class="ghost" id="calPrev" aria-label="前の月">◀ 前の月</button><button class="ghost" id="calNext" aria-label="次の月">次の月 ▶</button></div>
     <div class="cal" id="cal"></div>
+    <p class="hint">日付を押すと、その日にやったことが出ます。</p>
+    <div class="calday" id="calDay" hidden></div>
     <div class="fam" id="fam"></div>
   </section>
 
@@ -418,11 +432,12 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
   <p class="hint">体力年齢の判定基準：中谷敏昭ら「30秒椅子立ち上がりテスト（CS-30テスト）成績の加齢変化と標準値の作成」臨床スポーツ医学 20(3), 2003／文部科学省「体力・運動能力調査」年齢別平均値（上体起こし）。判定は目安で、医学的な診断ではありません。持病のある方は、運動を始める前に医師に相談してください。</p>
   <section class="panel" aria-label="バージョン情報">
     <details class="guide-d">
-      <summary><h2>バージョン 4.2<small class="vdate">（2026年11月18日）</small></h2></summary>
+      <summary><h2>バージョン 4.3<small class="vdate">（2026年11月18日）</small></h2></summary>
       <div class="gd">
         <div class="tbl"><table>
           <thead><tr><th>版</th><th>日付</th><th>おもな変更</th></tr></thead>
           <tbody>
+            <tr><th>4.3</th><td>11/18</td><td>カレンダーの日付を押すと、その日にやったメニュー（時刻・時間・回数・距離・カロリー・ポイント）と、体力測定・体の記録が出る。前の月も見られる</td></tr>
             <tr><th>4.2</th><td>11/18</td><td>自転車を追加：時間・距離（GPS）・平均と最高の速さ・消費カロリー・ポイントを記録（ふつう／電動アシストを選べる）。計らずに乗った時間だけの記録も</td></tr>
             <tr><th>4.1</th><td>11/17</td><td>歩いた距離と歩数が同期・バックアップで消えていたのを修正。歩く・足踏み・関節ほぐし・ストレッチのポイントは、選んでいる年代ではなく本人の年齢で計算</td></tr>
             <tr><th>4.0</th><td>11/17</td><td>外歩きの計測：スタート・一時停止・終了で時間を計り、歩数（スマホの動きセンサー）・距離（GPS）・速さ・消費カロリー・ポイントを記録。10分ごとに声でお知らせ</td></tr>
@@ -1164,21 +1179,53 @@ function endSession(early){
 const lastLog=pid=>{const a=logs[pid]||[];return a[a.length-1]||{}};
 
 /* ---- calendar ---- */
+let calOff=0,calSel=null;
+const LVN={light:'かるめ',normal:'ふつう',hard:'しっかり'};
+const EXN={knee:'もも上げ',push:'腕立て',jack:'ジャンピングジャック'};
+function logLine(l){
+  const tierMenu=!NOTIER.includes(l.menu)&&l.menu!=='camera';
+  const name=l.menu==='camera'?`カメラで数える：${EXN[l.ex]||'スクワット'}`:l.menu==='both'?'基本＋おなか':(CAT[l.menu]||l.menu);
+  const head=`${name}${tierMenu&&l.tier?`（${l.tier}代・${LVN[l.level]||''}${l.mins&&l.mins!=='full'?`・${l.mins}分版`:''}）`:''}`;
+  const det=[l.sec?`${mmss(l.sec)}`:'',l.reps?`${l.reps}回`:'',l.dist?`${(l.dist/1000).toFixed(2)}km`:'',l.steps?`${l.stepEst?'約':''}${l.steps.toLocaleString()}歩`:'',
+    l.vmax?`最高 時速${l.vmax}km`:'',l.assist?'電動アシスト':'',l.kc!=null?`約${Math.round(l.kc)}kcal`:'',l.pts!=null?`${fmtP(l.pts)}ポイント`:'',l.part?'途中まで':'',l.skip?`${l.skip}種目とばし`:''].filter(Boolean).join('・');
+  return {head,det};
+}
+function calDay(pid,d){
+  const box=$('calDay'),q=people.find(x=>x.id===pid)||cur();
+  const L=(logs[pid]||[]).map(LO).filter(l=>l.d===d).sort((a,b)=>(a.t||0)-(b.t||0));
+  const T=(tests[pid]||[]).filter(x=>x.d===d),W=weightPoints(pid).filter(x=>x.d===d);
+  const dt=kd(d),wd='日月火水木金土'[dt.getDay()];
+  const kc=L.reduce((a,l)=>a+(l.kc||0),0),pt=L.reduce((a,l)=>a+(l.pts||0),0),sec=L.reduce((a,l)=>a+(l.sec||0),0);
+  let h=`<h3>${dt.getMonth()+1}月${dt.getDate()}日（${wd}）の${esc(q.name)}さん</h3>`;
+  if(!L.length&&!T.length&&!W.length)h+='<p>この日の記録はありません。</p>';
+  if(L.length){h+=`<p><b>${L.length}回</b>　${sec?`合計 ${mmss(sec)}　`:''}${kc?`約${Math.round(kc)}kcal　`:''}${fmtP(pt)}ポイント</p><ul>`+
+    L.map(l=>{const x=logLine(l),t=l.t?new Date(l.t):null;return `<li><span class="tm">${t?`${t.getHours()}:${String(t.getMinutes()).padStart(2,'0')}`:'—'}</span><span class="bd"><b>${esc(x.head)}</b><small>${esc(x.det)}</small></span></li>`}).join('')+'</ul>'}
+  if(T.length)h+=`<p><b>体力測定</b>　${T.map(x=>[x.cs!=null?`椅子立ち上がり ${x.cs}回`:'',x.su!=null?`上体起こし ${x.su}回`:''].filter(Boolean).join('・')).join('／')}</p>`;
+  if(W.length){const w=W[W.length-1];h+=`<p><b>体の記録</b>　${COMP.filter(c=>w[c[0]]!=null).map(c=>`${c[1]} ${w[c[0]]}${c[2]}`).join('・')}</p>`}
+  h+='<button class="ghost" id="calClose">とじる</button>';
+  box.innerHTML=h;box.hidden=false;$('calClose').onclick=()=>{calSel=null;box.hidden=true;calendar()};
+}
 function calendar(){
-  const now=new Date(),y=now.getFullYear(),m=now.getMonth(),p=cur();
+  const nw=new Date(),now=new Date(nw.getFullYear(),nw.getMonth()+calOff,1),y=now.getFullYear(),m=now.getMonth(),p=cur(),isNow=calOff===0;
   const days=new Set(recs[p.id]||[]),pre=`${y}-${String(m+1).padStart(2,'0')}-`;
-  $('calTitle').textContent=`${p.name}さんの${m+1}月`;
+  (logs[p.id]||[]).forEach(l=>{const d=typeof l==='string'?l.slice(0,10):l.d;if(d)days.add(d)});
+  $('calTitle').textContent=`${p.name}さんの${isNow?'':y+'年'}${m+1}月`;
+  $('calNext').disabled=calOff>=0;
   const c=$('cal');c.innerHTML='';
   '日月火水木金土'.split('').forEach(w=>{const e=document.createElement('div');e.className='wd';e.textContent=w;c.appendChild(e)});
   const first=new Date(y,m,1).getDay(),n=new Date(y,m+1,0).getDate();let cnt=0;
   for(let k=0;k<first;k++)c.appendChild(document.createElement('div'));
   for(let d=1;d<=n;d++){
-    const e=document.createElement('div');e.className='d';e.textContent=d;
-    if(days.has(pre+String(d).padStart(2,'0'))){e.classList.add('done');cnt++}
-    if(d===now.getDate())e.classList.add('today');
+    const key=pre+String(d).padStart(2,'0'),e=document.createElement('button');e.className='d';e.textContent=d;
+    const done=days.has(key);if(done){e.classList.add('done');cnt++}
+    if(isNow&&d===nw.getDate())e.classList.add('today');
+    if(calSel===key)e.classList.add('sel');
+    e.setAttribute('aria-label',`${m+1}月${d}日${done?'（運動した日）':''}。押すと内容を表示`);
+    e.onclick=()=>{calSel=key;c.querySelectorAll('.sel').forEach(x=>x.classList.remove('sel'));e.classList.add('sel');calDay(p.id,key);$('calDay').scrollIntoView({block:'nearest'})};
     c.appendChild(e);
   }
   $('calCount').textContent=cnt;
+  if(calSel&&calSel.startsWith(pre))calDay(p.id,calSel);else $('calDay').hidden=true;
   const fam=$('fam');fam.innerHTML='';
   if(people.length>1){
     const t=document.createElement('span');t.textContent='家族の今月：';fam.appendChild(t);
@@ -1479,6 +1526,8 @@ function evalGoal(p,prev,now){
     <p class="msg" style="font-family:var(--f-display);font-weight:700;font-size:1.25rem">${head}</p><p>${body}</p></div>`};
 }
 $('goalBtn').onclick=()=>goalForm();
+$('calPrev').onclick=()=>{calOff--;calSel=null;calendar()};
+$('calNext').onclick=()=>{if(calOff<0){calOff++;calSel=null;calendar()}};
 
 /* ---- 今週の予定（スケジュールの指南） ----
    wk：月〜日の7文字。S=筋トレの日、L=かるい日（おなか＋関節ほぐし）、W=歩く日、R=休みの日 */
