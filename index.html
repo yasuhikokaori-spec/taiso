@@ -342,7 +342,7 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
       <div class="seg" role="group" aria-labelledby="l-mtier" data-key="tier">
         <button data-v="10">10代</button><button data-v="20">20代</button><button data-v="30">30代</button><button data-v="40">40代</button><button data-v="50">50代</button><button data-v="60">60代</button><button data-v="70">70代〜</button></div></div>
     <div class="seg" role="group" aria-label="メニューを選ぶ" data-key="menu">
-      <button id="m-base" data-v="base">① 基本</button><button id="m-belly" data-v="belly">② おなか</button><button id="m-both" data-v="both">①＋② 両方</button><button id="m-stand" data-v="stand">③ 立ったまま（外出先）</button><button id="m-chair" data-v="chair">④ 椅子中心</button><button id="m-nojump" data-v="nojump">⑤ ジャンプなし</button><button id="m-cool" data-v="cool">⑥ ストレッチ（クールダウン）</button><button id="m-joint" data-v="joint">⑦ 関節ほぐし</button><button id="m-step" data-v="step">⑧ 足踏み（家の中で10分）</button></div>
+      <button id="m-base" data-v="base">① 基本</button><button id="m-belly" data-v="belly">② おなか</button><button id="m-both" data-v="both">①＋② 両方</button><button id="m-stand" data-v="stand">③ 立ったまま（外出先）</button><button id="m-chair" data-v="chair">④ 椅子中心</button><button id="m-nojump" data-v="nojump">⑤ ジャンプなし</button><button id="m-cool" data-v="cool">⑥ ストレッチ（クールダウン）</button><button id="m-joint" data-v="joint">⑦ 関節ほぐし（ウォームアップ）</button><button id="m-step" data-v="step">⑧ 足踏み（家の中で10分）</button></div>
     <div class="row"><label id="l-mins">時間</label>
       <div class="seg" role="group" aria-labelledby="l-mins" data-key="mins">
         <button data-v="full">ぜんぶ</button><button data-v="3">3分</button><button data-v="5">5分</button><button data-v="7">7分</button><button data-v="10">10分</button></div>
@@ -432,11 +432,12 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
   <p class="hint">体力年齢の判定基準：中谷敏昭ら「30秒椅子立ち上がりテスト（CS-30テスト）成績の加齢変化と標準値の作成」臨床スポーツ医学 20(3), 2003／文部科学省「体力・運動能力調査」年齢別平均値（上体起こし）。判定は目安で、医学的な診断ではありません。持病のある方は、運動を始める前に医師に相談してください。</p>
   <section class="panel" aria-label="バージョン情報">
     <details class="guide-d">
-      <summary><h2>バージョン 4.3<small class="vdate">（2026年11月18日）</small></h2></summary>
+      <summary><h2>バージョン 4.4<small class="vdate">（2026年11月18日）</small></h2></summary>
       <div class="gd">
         <div class="tbl"><table>
           <thead><tr><th>版</th><th>日付</th><th>おもな変更</th></tr></thead>
           <tbody>
+            <tr><th>4.4</th><td>11/18</td><td>⑥ストレッチに「腰割り」を追加（股関節をやわらかく）。⑦の名前を「関節ほぐし（ウォームアップ）」に。声の「左」が「さん」と読まれるのを「ひだり」に直した</td></tr>
             <tr><th>4.3</th><td>11/18</td><td>カレンダーの日付を押すと、その日にやったメニュー（時刻・時間・回数・距離・カロリー・ポイント）と、体力測定・体の記録が出る。前の月も見られる</td></tr>
             <tr><th>4.2</th><td>11/18</td><td>自転車を追加：時間・距離（GPS）・平均と最高の速さ・消費カロリー・ポイントを記録（ふつう／電動アシストを選べる）。計らずに乗った時間だけの記録も</td></tr>
             <tr><th>4.1</th><td>11/17</td><td>歩いた距離と歩数が同期・バックアップで消えていたのを修正。歩く・足踏み・関節ほぐし・ストレッチのポイントは、選んでいる年代ではなく本人の年齢で計算</td></tr>
@@ -615,16 +616,18 @@ const TIERNAME={'10':'10代','20':'20代','30':'30代','40':'40代','50':'50代'
 let jaVoice=null;
 function pickVoice(){const vs=speechSynthesis.getVoices();jaVoice=vs.find(v=>/^ja/i.test(v.lang))||null}
 if('speechSynthesis' in window){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}
+/* 読み上げ用のよみ直し：「左」を「さ」「さん」と読む端末があるため、ひらがなにする */
+const yomi=t=>String(t).replace(/左右/g,'さゆう').replace(/左/g,'ひだり').replace(/右/g,'みぎ');
 function say(t){
   if(!('speechSynthesis' in window)||!t)return;
   speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(t);u.lang='ja-JP';u.rate=.9;if(jaVoice)u.voice=jaVoice;
+  const u=new SpeechSynthesisUtterance(yomi(t));u.lang='ja-JP';u.rate=.9;if(jaVoice)u.voice=jaVoice;
   speechSynthesis.speak(u);
 }
 /* カメラの回数読み上げ用：前の数字を打ち切らずに続けて読む（素早く2回数えても「11、12」と両方言う） */
 function sayCount(t){
   if(!('speechSynthesis' in window)||!t)return;
-  const u=new SpeechSynthesisUtterance(t);u.lang='ja-JP';u.rate=1.2;if(jaVoice)u.voice=jaVoice;
+  const u=new SpeechSynthesisUtterance(yomi(t));u.lang='ja-JP';u.rate=1.2;if(jaVoice)u.voice=jaVoice;
   speechSynthesis.speak(u);
 }
 
@@ -785,7 +788,7 @@ const MENUS={
    march(60),
    altTwist(true)]}
 };
-const CAT={base:'基本メニュー',belly:'おなかメニュー',stand:'立ったままメニュー',chair:'椅子中心メニュー',nbase:'基本（ジャンプなし）',nbelly:'おなか（ジャンプなし）',cool:'ストレッチ（クールダウン）',joint:'関節ほぐし',step:'足踏み（家の中で10分）',walk:'外歩き',bike:'自転車'};
+const CAT={base:'基本メニュー',belly:'おなかメニュー',stand:'立ったままメニュー',chair:'椅子中心メニュー',nbase:'基本（ジャンプなし）',nbelly:'おなか（ジャンプなし）',cool:'ストレッチ（クールダウン）',joint:'関節ほぐし（ウォームアップ）',step:'足踏み（家の中で10分）',walk:'外歩き',bike:'自転車'};
 /* ---- 立ったまま（外出先）：床・椅子を使わず、跳ばない。手すりや壁があれば支えにする ---- */
 const heelRaise=(reps,support)=>R({name:'かかと上げ',pic:'heel',reps,desc:support?'手すりや壁に手を添えて、かかとを上げて2秒キープ。':'かかとを真上に上げて2秒キープ、ゆっくり下ろす。',
   prepGuide:support?'手すりや壁に軽く手を添え、足を肩幅に開いて立ちます。':'足を肩幅に開いてまっすぐ立ちます。',prepSay:'かかと上げです。足を肩幅に開いて立ちましょう。',
@@ -912,7 +915,13 @@ const COOL={
    guide:'うしろ足のひざを伸ばし、かかとを床につけたまま、前のひざをゆっくり曲げます。ふくらはぎが伸びているのを感じて。'})};
 const COOLFULL=[COOL.inner(20),COOL.front(20),COOL.back(20),COOL.calf(20)],COOLSHORT=[COOL.inner(15),COOL.calf(15)];
 /* ⑥ ストレッチ（単独メニュー）は、イラストのとおり1か所30秒 */
-const COOLMENU=[COOL.inner(30),COOL.front(30),COOL.back(30),COOL.calf(30)];
+/* 腰割り：股関節をやわらかくする（あぐらがかけない人に）。ゆっくり腰を落として数秒キープ、もどす */
+const KOSHIWARI=n=>R({name:'腰割り',pic:'koshiwari',reps:n,desc:'足を肩幅より広く開き、つま先を斜め外へ。上体を起こしたまま、真下へゆっくり腰を落として数秒キープ。',
+  prepGuide:'足を肩幅より広く開き、つま先を斜め外側に向けます。両手は太ももに。背すじをまっすぐに。ふらつく人は、椅子の背につかまって。',
+  prepSay:'腰割りです。足を大きく開いて、つま先を斜め外に向けましょう。',
+  ph:[{d:3,label:'上体を起こしたまま、ゆっくり腰を落とす',g:'down'},{d:5,label:'そのままキープ（股関節がのびる）',g:'hold',say:'キープ'},{d:3,label:'ゆっくりもどす',g:'up',say:'もどして'}],
+  guide:'ひざは、つま先と同じ方向（外側）へ。ひざが内側に入らないように。お相撲さんのように、どっしりと。痛い所までは下げません。',sayRep:r=>`${r}、腰を落として`});
+const COOLMENU=[COOL.inner(30),KOSHIWARI(5),COOL.front(30),COOL.back(30),COOL.calf(30)];
 function coolSteps(short){
   const C=[{k:'rest',title:'クールダウン',kicker:'仕上げ',dur:6,guide:'ゆっくり呼吸しながら、筋肉を伸ばします。反動はつけず、痛くないところまで。',say:'おつかれさまでした。最後にクールダウンです。',ann:1}];
   (short?COOLSHORT:COOLFULL).forEach(e=>e.build(C,'normal','クールダウン'));C.forEach(x=>x.cool=true);return C;
@@ -1021,7 +1030,7 @@ function paint(){
     const h=document.createElement('h2');h.textContent=({base:'① ',belly:'② ',stand:'③ ',chair:'④ ',nbase:'⑤ ',nbelly:'⑤ ',cool:'⑥ ',joint:'⑦ ',step:'⑧ '})[b]+CAT[b];ex.appendChild(h);
     if(b==='step'){const n=document.createElement('p');n.className='hint';n.textContent='外を歩くかわりに、家の中でその場足踏みを10分。テレビを見ながらでもかまいません。少し息がはずむくらいが目安です。1日に1〜3回（朝・昼・夕方に分けてOK）。外を歩けた日は「今週の予定」の「外を歩いた」で記録できます。';ex.appendChild(n)}
     if(b==='joint'){const n=document.createElement('p');n.className='hint';n.textContent='関節を大きく、ゆっくり動かして、動く範囲を保ちます。朝のこわばりに（起きて少したってから）、長く座ったあとに。反動はつけず、痛くない範囲で。運動の最初に自動で付けるウォームアップは、この中の肩・股関節・足首です。';ex.appendChild(n)}
-    if(b==='cool'){const n=document.createElement('p');n.className='hint';n.textContent='ストレッチだけをします。寝る前や、足がつりやすい日、運動のあとに。椅子を使うので、どの年代でもできます。運動の最後に自動で付けるクールダウンと同じ内容です。';ex.appendChild(n)}
+    if(b==='cool'){const n=document.createElement('p');n.className='hint';n.textContent='ストレッチだけをします。寝る前や、足がつりやすい日、運動のあとに。椅子を使うので、どの年代でもできます。運動の最後に自動で付けるクールダウンの4種に、股関節をやわらかくする「腰割り」を加えています（あぐらがかけない人に）。';ex.appendChild(n)}
     if(b==='chair'||b==='nbase'){const n=document.createElement('p');n.className='hint';n.textContent=b==='chair'?'壁につけた動かない椅子を使います。床に寝る種目はありません。ひざや腰が心配な人、雨の日にも。':(+p.tier>=40?'この年代のメニューには、もともと跳ぶ種目がありません。いつもの基本＋おなかと同じ内容です。':'跳ぶ種目を跳ばない形に置きかえています（ジャンプスクワット→スクワット、バーピー→ジャンプなし、ジャンピングジャック→ステップジャック）。夜やマンションでも。');ex.appendChild(n)}
     if(b==='stand'){const n=document.createElement('p');n.className='hint';n.textContent='床に寝たり椅子に座ったりせず、跳ばないので、外出先や旅先でもできます。手すりや壁があれば支えにしてください。';ex.appendChild(n)}
     if(!['stand','chair','cool','joint','step'].includes(b)&&p.sex==='f'&&b===blocks(p)[0]){const n=document.createElement('p');n.className='hint';n.textContent='女性向けに、腕立て伏せをひざつきにし、かかと落とし（骨を丈夫に）と骨盤底筋トレ（尿もれ予防）を入れています。';ex.appendChild(n)}
@@ -1863,7 +1872,7 @@ $('guideBox').addEventListener('toggle',()=>{try{localStorage.setItem('kt-guide-
 const METS=[['スクワット（うしろに椅子）',3.5],['ジャンプスクワット',8],['椅子スクワット',3.5],['スクワット',5],['ランジ',5],
   ['バーピー（ジャンプなし）',5],['ステップジャック',4.5],['座って足伸ばし',2.8],['椅子腕立て',3.8],['バーピー',8],['マウンテンクライマー',8],['ジャンピングジャック',8],['その場もも上げ',4],['立ってもも上げ',3.5],
   ['腕立て伏せ',3.8],['ひざつき腕立て',3.8],['サイドプランク',3.8],['プランク',3.8],['壁腕立て',3.5],['かかと上げ',3.5],
-  ['ヒップリフト',3.5],['立って上半身ひねり',3.5],['座って上半身ひねり',2.8],['座って膝上げ',2.8],['ドローイン',2.3],['片脚立ち',2.3],['内もものストレッチ',2.3],['太もも前のストレッチ',2.3],['太もも裏のストレッチ',2.3],['ふくらはぎのストレッチ',2.3],['かかと落とし',3.5],['その場足踏み',3.5],['腕を振って足踏み',3.8],['左右ステップ',3.8],['ゆっくり足踏み',2.5],['首の横たおし',2],['肩回し',2.5],['胸ひらき',2.5],['股関節回し',2.8],['ひざの曲げ伸ばし',2.5],['足首回し',2],['骨盤底筋トレ',1.8]];
+  ['ヒップリフト',3.5],['立って上半身ひねり',3.5],['座って上半身ひねり',2.8],['座って膝上げ',2.8],['ドローイン',2.3],['片脚立ち',2.3],['内もものストレッチ',2.3],['太もも前のストレッチ',2.3],['太もも裏のストレッチ',2.3],['ふくらはぎのストレッチ',2.3],['かかと落とし',3.5],['その場足踏み',3.5],['腕を振って足踏み',3.8],['左右ステップ',3.8],['ゆっくり足踏み',2.5],['腰割り',3.0],['首の横たおし',2],['肩回し',2.5],['胸ひらき',2.5],['股関節回し',2.8],['ひざの曲げ伸ばし',2.5],['足首回し',2],['骨盤底筋トレ',1.8]];
 const metOf=st=>{if(st.k==='prep'||st.k==='rest')return 1.3;const m=METS.find(([n])=>st.title.startsWith(n));return m?m[1]:3.5};
 const netCache={};
 function netMetH(tier,menu,level,mins,sex){const k=tier+menu+level+(mins||'')+(sex||'');if(netCache[k]==null)netCache[k]=steps({tier,menu,level,mins,sex}).reduce((a,st)=>a+(metOf(st)-1)*st.dur/3600,0);return netCache[k]}
