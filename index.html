@@ -432,11 +432,12 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
   <p class="hint">体力年齢の判定基準：中谷敏昭ら「30秒椅子立ち上がりテスト（CS-30テスト）成績の加齢変化と標準値の作成」臨床スポーツ医学 20(3), 2003／文部科学省「体力・運動能力調査」年齢別平均値（上体起こし）。判定は目安で、医学的な診断ではありません。持病のある方は、運動を始める前に医師に相談してください。</p>
   <section class="panel" aria-label="バージョン情報">
     <details class="guide-d">
-      <summary><h2>バージョン 4.5<small class="vdate">（2026年11月18日）</small></h2></summary>
+      <summary><h2>バージョン 4.6<small class="vdate">（2026年11月19日）</small></h2></summary>
       <div class="gd">
         <div class="tbl"><table>
           <thead><tr><th>版</th><th>日付</th><th>おもな変更</th></tr></thead>
           <tbody>
+            <tr><th>4.6</th><td>11/19</td><td>「今日の足踏み・歩き・自転車」の時間に③立ったままメニューが入っていたのを修正。自転車の最高速度がGPSの飛びで大きく出すぎないよう、20秒以上の区間で計るように</td></tr>
             <tr><th>4.5</th><td>11/18</td><td>同期で同じ記録が二重になっていたのを、自動で1つにまとめるように修正</td></tr>
             <tr><th>4.4</th><td>11/18</td><td>⑥ストレッチに「腰割り」を追加（股関節をやわらかく）。⑦の名前を「関節ほぐし（ウォームアップ）」に。声の「左」が「さん」と読まれるのを「ひだり」に直した</td></tr>
             <tr><th>4.3</th><td>11/18</td><td>カレンダーの日付を押すと、その日にやったメニュー（時刻・時間・回数・距離・カロリー・ポイント）と、体力測定・体の記録が出る。前の月も見られる</td></tr>
@@ -1551,7 +1552,7 @@ $('calNext').onclick=()=>{if(calOff<0){calOff++;calSel=null;calendar()}};
 /* ---- 今週の予定（スケジュールの指南） ----
    wk：月〜日の7文字。S=筋トレの日、L=かるい日（おなか＋関節ほぐし）、W=歩く日、R=休みの日 */
 const WKP={'2':'SLRSLWR','3':'SLSLSWR','O':'SLSLSLR'};
-const moveMin=(pid,d)=>Math.round(dayLogs(pid,d).filter(l=>['step','walk','stand','bike'].includes(l.menu)).reduce((a,l)=>a+(l.sec||0),0)/60);
+const moveMin=(pid,d)=>Math.round(dayLogs(pid,d).filter(l=>['step','walk','bike'].includes(l.menu)).reduce((a,l)=>a+(l.sec||0),0)/60);
 const WKT={S:'筋トレ',L:'かるい',W:'歩く',R:'休み'};
 const STRM=['both','base','chair','nojump','nbase','camera'];
 const wkOf=p=>(p.wk&&/^[SLWR]{7}$/.test(p.wk))?p.wk:WKP['3'];
@@ -1687,8 +1688,15 @@ function wkOnPos(pos){if(!WK||WK.pausedAt)return;const c=pos.coords,pt={lat:c.la
   if(d<Math.max(5,c.accuracy*0.5))return;
   const vmax=isBike()?14:3.5;                       // 自転車は時速50km、歩きは時速12.6kmまで
   if(d/dt>vmax){WK.last=pt;return}
-  WK.dist+=d;WK.last=pt;
-  if(isBike()&&dt<=15&&d>=10){const v=d/dt*3.6;if(v>(WK.vmax||0)&&v<50)WK.vmax=Math.round(v*10)/10}}
+  /* GPSの一時的な飛び：直前の1分の平均より急に速すぎる点は、3回続くまで使わない */
+  const h=WK.hist||(WK.hist=[]),ref=h.find(x=>pt.t-x.t<=60000),sp=d/dt;
+  const avg=ref&&pt.t-ref.t>=20000?(WK.dist-ref.d)/((pt.t-ref.t)/1000):null;
+  if(avg!=null&&sp>Math.max(avg*2+2,isBike()?6:2.5)&&(WK.rej||0)<3){WK.rej=(WK.rej||0)+1;return}
+  WK.rej=0;WK.dist+=d;WK.last=pt;h.push({t:pt.t,d:WK.dist});while(h.length&&pt.t-h[0].t>90000)h.shift();
+  /* 最高速度：20秒以上の区間の平均で計る */
+  if(isBike()){
+    let a=null;for(let i=h.length-1;i>=0;i--)if(pt.t-h[i].t>=20000){a=h[i];break}
+    if(a){const v=(WK.dist-a.d)/((pt.t-a.t)/1000)*3.6;if(v>(WK.vmax||0)&&v<45)WK.vmax=Math.round(v*10)/10}}}
 function wkMotion(e){if(!WK||WK.pausedAt)return;const a=e.accelerationIncludingGravity;if(!a||a.x==null)return;
   WK.motion=true;if(wkStep.feed(a.x,a.y,a.z,e.timeStamp||performance.now()))WK.steps=wkStep.n}
 function wkStartSensors(){
@@ -1717,7 +1725,7 @@ $('wkGo').onclick=async()=>{
   const p=cur();WK={pid:p.id,kind:wkKindSel,assist:wkKindSel==='bike'&&p.ebike?1:0,start:Date.now(),pAcc:0,pausedAt:0,dist:0,steps:0,vmax:0,last:null,gps:'',motion:false};wkSave();
   say(isBike()?'スタートです。安全運転で、いってらっしゃい。':'スタートです。いってらっしゃい。');$('wkTitle').textContent=isBike()?'自転車で走っています':'歩いています';wkRun()};
 $('wkPause').onclick=()=>{if(!WK)return;
-  if(WK.pausedAt){WK.pAcc+=Date.now()-WK.pausedAt;WK.pausedAt=0;WK.last=null;$('wkPause').textContent='一時停止';say('再開します。')}
+  if(WK.pausedAt){WK.pAcc+=Date.now()-WK.pausedAt;WK.pausedAt=0;WK.last=null;WK.hist=[];$('wkPause').textContent='一時停止';say('再開します。')}
   else{WK.pausedAt=Date.now();$('wkPause').textContent='再開';say('一時停止しました。')}wkSave();wkDraw()};
 $('wkQuit').onclick=()=>{const b=$('wkQuit');if(!b.dataset.c){b.dataset.c='1';b.textContent='本当にやめる（もう一度押す）';setTimeout(()=>{delete b.dataset.c;b.textContent='記録しないでやめる'},4000);return}
   delete b.dataset.c;b.textContent='記録しないでやめる';wkStopSensors();WK=null;wkSave();show('home');paint()};
