@@ -432,11 +432,12 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
   <p class="hint">体力年齢の判定基準：中谷敏昭ら「30秒椅子立ち上がりテスト（CS-30テスト）成績の加齢変化と標準値の作成」臨床スポーツ医学 20(3), 2003／文部科学省「体力・運動能力調査」年齢別平均値（上体起こし）。判定は目安で、医学的な診断ではありません。持病のある方は、運動を始める前に医師に相談してください。</p>
   <section class="panel" aria-label="バージョン情報">
     <details class="guide-d">
-      <summary><h2>バージョン 4.6<small class="vdate">（2026年11月19日）</small></h2></summary>
+      <summary><h2>バージョン 4.7<small class="vdate">（2026年11月20日）</small></h2></summary>
       <div class="gd">
         <div class="tbl"><table>
           <thead><tr><th>版</th><th>日付</th><th>おもな変更</th></tr></thead>
           <tbody>
+            <tr><th>4.7</th><td>11/20</td><td>外歩きで歩数センサーが止まっていた間の歩数を、距離から補うように。大作戦を立て直すとき、開始日をそのままにして数字だけ直せるように</td></tr>
             <tr><th>4.6</th><td>11/19</td><td>「今日の足踏み・歩き・自転車」の時間に③立ったままメニューが入っていたのを修正。自転車の最高速度がGPSの飛びで大きく出すぎないよう、20秒以上の区間で計るように</td></tr>
             <tr><th>4.5</th><td>11/18</td><td>同期で同じ記録が二重になっていたのを、自動で1つにまとめるように修正</td></tr>
             <tr><th>4.4</th><td>11/18</td><td>⑥ストレッチに「腰割り」を追加（股関節をやわらかく）。⑦の名前を「関節ほぐし（ウォームアップ）」に。声の「左」が「さん」と読まれるのを「ひだり」に直した</td></tr>
@@ -1670,7 +1671,7 @@ const wkSave=()=>{try{if(WK)localStorage.setItem('kt-walk',JSON.stringify(WK));e
 const wkEl=()=>WK?Math.max(0,((WK.pausedAt||Date.now())-WK.start-WK.pAcc)/1000):0;
 const wkKmh=()=>{const h=wkEl()/3600;return WK&&WK.dist>30&&h>0?WK.dist/1000/h:null};
 function wkKcal(){const q=people.find(x=>x.id===WK.pid)||cur(),v=wkKmh(),met=isBike()?(v?bikeMet(v,WK.assist):(WK.assist?3.5:5.0)):walkMet(v??4.0);return 1.05*(met-1)*wkEl()/3600*kgOf(q)}
-function wkStepsShown(){if(WK.steps>0&&WK.motion)return {n:WK.steps,est:false};
+function wkStepsShown(){if(WK.steps>0&&WK.motion){const g=Math.round(WK.gapSteps||0);return {n:WK.steps+g,est:g>20}}
   if(WK.dist>30)return {n:Math.round(WK.dist/0.65),est:true};return {n:Math.round(wkEl()/60*100),est:true}}
 function wkDraw(){if(!WK)return;
   $('wkTime').textContent=clk(wkEl());$('wkDist').textContent=(WK.dist/1000).toFixed(2);
@@ -1692,12 +1693,14 @@ function wkOnPos(pos){if(!WK||WK.pausedAt)return;const c=pos.coords,pt={lat:c.la
   const h=WK.hist||(WK.hist=[]),ref=h.find(x=>pt.t-x.t<=60000),sp=d/dt;
   const avg=ref&&pt.t-ref.t>=20000?(WK.dist-ref.d)/((pt.t-ref.t)/1000):null;
   if(avg!=null&&sp>Math.max(avg*2+2,isBike()?6:2.5)&&(WK.rej||0)<3){WK.rej=(WK.rej||0)+1;return}
-  WK.rej=0;WK.dist+=d;WK.last=pt;h.push({t:pt.t,d:WK.dist});while(h.length&&pt.t-h[0].t>90000)h.shift();
+  WK.rej=0;WK.dist+=d;WK.last=pt;
+  /* 画面が消えるなどで歩数センサーが止まっていた間に進んだ分は、距離から歩数を補う（歩幅0.68m） */
+  if(!isBike()&&WK.motion&&Date.now()-(WK.lm||0)>10000)WK.gapSteps=(WK.gapSteps||0)+d/0.68;h.push({t:pt.t,d:WK.dist});while(h.length&&pt.t-h[0].t>90000)h.shift();
   /* 最高速度：20秒以上の区間の平均で計る */
   if(isBike()){
     let a=null;for(let i=h.length-1;i>=0;i--)if(pt.t-h[i].t>=20000){a=h[i];break}
     if(a){const v=(WK.dist-a.d)/((pt.t-a.t)/1000)*3.6;if(v>(WK.vmax||0)&&v<45)WK.vmax=Math.round(v*10)/10}}}
-function wkMotion(e){if(!WK||WK.pausedAt)return;const a=e.accelerationIncludingGravity;if(!a||a.x==null)return;
+function wkMotion(e){if(!WK||WK.pausedAt)return;const a=e.accelerationIncludingGravity;if(!a||a.x==null)return;WK.lm=Date.now();
   WK.motion=true;if(wkStep.feed(a.x,a.y,a.z,e.timeStamp||performance.now()))WK.steps=wkStep.n}
 function wkStartSensors(){
   if(navigator.geolocation&&wkGeo==null){WK.gps=WK.gps||'wait';
@@ -1845,6 +1848,7 @@ function campForm(p){
       <div class="tg">${keys.map(k=>`<label>${CM[k][0]}（いま）<span><input class="tx" type="number" step="0.1" id="cb_${k}" value="${b[k]??''}" placeholder="${k==='su'||k==='cs'?'体力測定':'記録'}">${CM[k][1]}</span></label><label>${CM[k][0]}（目標）<span><input class="tx" type="number" step="0.1" id="ct_${k}" value="${t[k]??''}">${CM[k][1]}</span></label>`).join('')}</div>
       ${goal==='belly'&&b.waist==null?'<p class="hint">腹囲（おへその高さのおなか回り）をメジャーで測って入れると、おなかの成果がいちばんよく分かります。</p>':''}
       ${b.su==null&&b.cs==null?'<p class="hint">体力測定の記録がまだありません。作戦の最初に体力測定（約3分）をすると、回数の目標も立てられます。</p>':''}
+      ${campOn(p)&&!campStat(p).done?`<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="cKeep" checked> 開始日はそのまま（${fmtD(p.camp.start)}）。数字だけ直す</label>`:''}
       <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="cWk" ${goal==='belly'?'checked':''}> 今週の予定を「${goal==='belly'?'おなか作戦（毎日少し動く）':'筋トレ週3回'}」にする</label>
       <div class="btns"><button class="big" id="cSave">この作戦ではじめる</button><button class="ghost" id="cCancel">やめる</button></div>
       <p class="hint" id="cMsg"></p></div>`;
@@ -1860,9 +1864,10 @@ function campForm(p){
       if(!Object.keys(tgt).length){$('cMsg').textContent='いまの値と目標を、少なくとも1つ入れてください。';return}
       const today=dkey(new Date());
       /* 腹囲などを新しく入れたときは、体の記録にも残す */
-      const newW={};['kg','waist','fat'].forEach(k=>{if(base[k]!=null&&(latestVal(p.id,k)||{}).v!==base[k])newW[k]=base[k]});
+      const keep=$('cKeep')&&$('cKeep').checked&&campOn(p);
+      const newW={};if(!keep)['kg','waist','fat'].forEach(k=>{if(base[k]!=null&&(latestVal(p.id,k)||{}).v!==base[k])newW[k]=base[k]});
       if(Object.keys(newW).length){const e={d:today,t:Date.now(),...newW};const kg0=newW.kg??(latestVal(p.id,'kg')||{}).v??(+p.weight||null);if(kg0!=null)e.kg=kg0;(wlog[p.id]||(wlog[p.id]=[])).push(e);store.set('kt-wlog',wlog);if(newW.kg!=null)p.weight=newW.kg}
-      p.camp={goal,months,start:today,base,tgt};if($('cWk').checked)p.wk=WKP[goal==='belly'?'O':'3'];
+      p.camp={goal,months,start:keep?p.camp.start:today,base,tgt};if($('cWk').checked)p.wk=WKP[goal==='belly'?'O':'3'];
       savePeople();paint();say(`${p.name}さんの${months}か月大作戦をはじめます。がんばりましょう。`);setTimeout(()=>$('campPanel').scrollIntoView({block:'start'}),50)};
   };
   draw();
