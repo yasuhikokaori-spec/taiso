@@ -327,7 +327,7 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
       <ul class="guide-list">
         <li><b>筋トレ（①基本・④椅子中心・⑤ジャンプなし）は1日おきに。</b>筋肉は、きたえた後の休みの間（48時間ほど）に強くなります。毎日続けるより、間に1日あけるほうが効果的です。</li>
         <li><b>おなか（②）と関節ほぐし（⑦）は毎日でもかまいません。</b>筋トレのない日は「かるい日」として、この2つをします。</li>
-        <li><b>週に1日は休みの日</b>をつくります。ストレッチ（⑥）だけ、または何もしなくてかまいません。</li>
+        <li><b>週に1日は休みの日</b>をつくります。筋トレはせず、ストレッチ（⑥）やゆっくりの散歩・自転車くらいにします（動く休養）。目標のポイントは、休みの日をのぞいて計算し、マイナスにもなりません。</li><li><b>慣れて物足りなくなったら</b>、日数を増やすより、筋トレの日の強さを上げます（「ふつう」→「しっかり」、または一つ若い年代へ）。</li>
         <li><b>歩く日</b>は、外を20〜40分歩くか、家の中で⑧足踏み10分を2〜3回。10分ずつに分けても、効果はほぼ同じです。外を歩いた分は「外を歩いた」で記録できます。</li>
         <li><b>強い筋肉痛・体調が悪い日・関節が痛む日は休みます。</b>予定どおりでなくてかまいません。翌日に回せば大丈夫です。</li>
         <li><b>強さは「ふつう」が基本。</b>最後の数回が「ややきつい」くらいがちょうどよく、2週間ほど楽に続けられたら「しっかり」や、ひとつ若い年代に上げます。きつすぎたら下げます。</li>
@@ -432,11 +432,12 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
   <p class="hint">体力年齢の判定基準：中谷敏昭ら「30秒椅子立ち上がりテスト（CS-30テスト）成績の加齢変化と標準値の作成」臨床スポーツ医学 20(3), 2003／文部科学省「体力・運動能力調査」年齢別平均値（上体起こし）。判定は目安で、医学的な診断ではありません。持病のある方は、運動を始める前に医師に相談してください。</p>
   <section class="panel" aria-label="バージョン情報">
     <details class="guide-d">
-      <summary><h2>バージョン 4.7<small class="vdate">（2026年11月20日）</small></h2></summary>
+      <summary><h2>バージョン 4.8<small class="vdate">（2026年11月22日）</small></h2></summary>
       <div class="gd">
         <div class="tbl"><table>
           <thead><tr><th>版</th><th>日付</th><th>おもな変更</th></tr></thead>
           <tbody>
+            <tr><th>4.8</th><td>11/22</td><td>「今週の予定」の休みの日は、目標のサボり（マイナス）にならず、予定ペースや目標ポイントの計算からものぞくように。休みの日の案内を「動く休養」に</td></tr>
             <tr><th>4.7</th><td>11/20</td><td>外歩きで歩数センサーが止まっていた間の歩数を、距離から補うように。大作戦を立て直すとき、開始日をそのままにして数字だけ直せるように</td></tr>
             <tr><th>4.6</th><td>11/19</td><td>「今日の足踏み・歩き・自転車」の時間に③立ったままメニューが入っていたのを修正。自転車の最高速度がGPSの飛びで大きく出すぎないよう、20秒以上の区間で計るように</td></tr>
             <tr><th>4.5</th><td>11/18</td><td>同期で同じ記録が二重になっていたのを、自動で1つにまとめるように修正</td></tr>
@@ -1425,9 +1426,12 @@ function periodDays(per,s){if(per==='week')return 7;const e=new Date(s.getFullYe
 const planText=pl=>'毎日 '+pl.map(x=>`${TIERNAME[x.tier]}メニュー${x.n}回`).join('＋');
 const earned=(pid,g)=>(logs[pid]||[]).filter(l=>l.d>=g.start&&l.d<=g.end).reduce((a,l)=>a+l.pts,0);
 const penOf=g=>g.penalty!=null?g.penalty:g.target/g.days/2;
+/* 「今週の予定」で休みの日（R）は、サボりにしない・予定ペースにも数えない */
+const isRestDay=(pid,k)=>{const q=people.find(x=>x.id===pid);if(!q)return false;return wkOf(q)[(kd(k).getDay()+6)%7]==='R'};
+const actDays=(pid,from,to)=>{let n=0;for(let d=kd(from);dkey(d)<=to;d=addD(d,1))if(!isRestDay(pid,dkey(d)))n++;return n};
 function missedDays(pid,g,today){
-  const done=new Set((logs[pid]||[]).map(l=>l.d)),last=today>g.end?g.end:dkey(addD(kd(today),-1)),out=[];
-  for(let d=kd(g.start);dkey(d)<=last;d=addD(d,1)){const k=dkey(d);if(!done.has(k))out.push(k)}
+  const done=new Set((logs[pid]||[]).map(l=>typeof l==='string'?l.slice(0,10):l.d)),last=today>g.end?g.end:dkey(addD(kd(today),-1)),out=[];
+  for(let d=kd(g.start);dkey(d)<=last;d=addD(d,1)){const k=dkey(d);if(!done.has(k)&&!isRestDay(pid,k))out.push(k)}
   return out;
 }
 function goalState(pid){
@@ -1435,7 +1439,9 @@ function goalState(pid){
   const today=dkey(new Date()),raw=earned(pid,g),miss=missedDays(pid,g,today),pen=penOf(g),minus=miss.length*pen,e=raw-minus;
   const doneToday=(logs[pid]||[]).some(l=>l.d===today);
   const elapsed=Math.min(g.days,Math.max(0,dBetween(g.start,today)+1));
-  return {g,e,raw,miss:miss.length,pen,minus,doneToday,today,elapsed,over:today>g.end,pace:g.target*elapsed/g.days,left:Math.max(0,dBetween(today,g.end)+1)};
+  const tot=Math.max(1,actDays(pid,g.start,g.end)),done=today>g.end?tot:actDays(pid,g.start,today),restToday=isRestDay(pid,today);
+  const leftAct=today>g.end?0:actDays(pid,today,g.end);
+  return {g,e,raw,miss:miss.length,pen,minus,doneToday,today,elapsed,over:today>g.end,pace:g.target*Math.min(tot,done)/tot,left:Math.max(0,dBetween(today,g.end)+1),leftAct,restToday};
 }
 function goalPanel(){
   const p=cur(),st=goalState(p.id),box=$('goalBody');
@@ -1450,13 +1456,13 @@ function goalPanel(){
   let line;
   if(over)line='期間が終わりました。体力測定をして、成果を確かめましょう。';
   else{
-    const need=Math.max(0,g.target-e),diff=e-pace,per=need/left,one=ptsOf(p.tier,p.menu,p.level,p.mins);
+    const need=Math.max(0,g.target-e),diff=e-pace,per=need/Math.max(1,st.leftAct),one=ptsOf(p.tier,p.menu,p.level,p.mins);
     line=(need<=0?'目標ポイントを達成しました！このまま続けましょう。':
       (diff>=0?`予定より ${fmtP(diff)} ポイント先行しています。`:`予定より ${fmtP(-diff)} ポイント遅れています。`)+
-      `のこり${left}日。1日 ${fmtP(per)} ポイント（今のメニューなら約${fmtP(per/one)}回）で達成です。`);
+      `のこり${left}日${left!==st.leftAct?`（運動する日は${st.leftAct}日）`:''}。運動する日に1日 ${fmtP(per)} ポイント（今のメニューなら約${fmtP(per/one)}回）で達成です。`);
   }
   const tl=tests[p.id]||[],hasBase=tl.some(t=>t.d>=dkey(addD(kd(g.start),-14)));
-  const skip=st.pen>0?(st.miss?`<p class="skip">サボった日 ${st.miss}日：−${fmtP(st.minus)} ポイント（運動でたまった ${fmtP(st.raw)} ポイントから引いています）</p>`:'<p class="hint">サボった日はありません。この調子です！</p>')+(!over&&!st.doneToday?`<p class="skip">今日はまだ運動していません。やらないと、明日 −${fmtP(st.pen)} ポイントになります。</p>`:''):'';
+  const skip=st.pen>0?(st.miss?`<p class="skip">サボった日 ${st.miss}日：−${fmtP(st.minus)} ポイント（運動でたまった ${fmtP(st.raw)} ポイントから引いています）</p>`:'<p class="hint">サボった日はありません。この調子です！</p>')+(!over&&!st.doneToday?(st.restToday?'<p class="hint">今日は「今週の予定」の休みの日です。運動しなくてもマイナスになりません。</p>':`<p class="skip">今日はまだ運動していません。やらないと、明日 −${fmtP(st.pen)} ポイントになります。</p>`):''):'';
   box.innerHTML=`<div class="gnum"><b class="${e<0?'neg':''}">${fmtP(e)}</b> / ${fmtP(g.target)} ポイント（${Math.floor(e/g.target*100)}%）</div>
     <div class="gbar" role="progressbar" aria-valuemin="0" aria-valuemax="${g.target}" aria-valuenow="${e}" aria-label="目標の達成度"><i style="width:${pct}%"></i>${over?'':`<span class="pace" style="left:${pp}%"></span>`}</div>
     ${over?'':'<div class="glegend"><span>たまったポイント</span><span><span class="pk"></span>今日までの予定</span></div>'}
@@ -1474,7 +1480,7 @@ function goalForm(pre){
   if(pre&&pre.per)per=pre.per;
   if(!Array.isArray(plan)||!plan.length)plan=[{tier:p.tier,n:1}];
   const render=()=>{
-    const perDay=plan.reduce((a,x)=>a+W[x.tier]*x.n,0),days=periodDays(per,new Date()),target=perDay*days;
+    const perDay=plan.reduce((a,x)=>a+W[x.tier]*x.n,0),days=periodDays(per,new Date()),s0=dkey(new Date()),ad=actDays(p.id,s0,dkey(addD(new Date(),days-1))),target=perDay*ad;
     tSet('目標',`${esc(p.name)}さんの目標を立てる`,`
      <div class="panel">
       <div class="row"><label id="l-per">期間</label><div class="seg" role="group" aria-labelledby="l-per" id="gPer"><button data-v="week">1週間</button><button data-v="month">1か月</button></div></div>
@@ -1483,9 +1489,9 @@ function goalForm(pre){
          <div class="stepper"><button class="ghost gM" data-i="${i}" aria-label="回数を減らす">－</button><span>${x.n}回</span><button class="ghost gP" data-i="${i}" aria-label="回数を増やす">＋</button></div>
          ${plan.length>1?`<button class="link gDel" data-i="${i}">消す</button>`:''}</div>`).join('')}
        <button class="ghost" id="gAdd">＋ 別の年代のメニューを足す</button></div>
-      <div class="gsum"><span>1日 ${fmtP(perDay)} ポイント × ${days}日</span><b>目標 ${fmtP(target)} ポイント</b></div>
+      <div class="gsum"><span>1日 ${fmtP(perDay)} ポイント × ${ad}日${ad<days?`（予定の休みの日${days-ad}日をのぞく）`:''}</span><b>目標 ${fmtP(target)} ポイント</b></div>
       <div class="row"><label id="l-pm">1日サボったときのマイナス</label><div class="seg" role="group" aria-labelledby="l-pm" id="gPm"><button data-v="none">なし</button><button data-v="half">−${fmtP(perDay/2)}（半日分）</button><button data-v="full">−${fmtP(perDay)}（1日分）</button></div>
-       <p class="hint">1回も運動しなかった日は、次の日にこのポイントが引かれます。</p></div>
+       <p class="hint">1回も運動しなかった日は、次の日にこのポイントが引かれます。「今週の予定」の休みの日は引かれません。</p></div>
       <p class="hint">ポイントは「①＋② 両方・ふつう」でやったときの数字です。①か②だけなら半分、「かるめ」は0.6倍、「しっかり」は1.4倍になります。</p>
       <p class="hint">若い年代のメニューほどきついので、ポイントが高くなります。たとえば「毎日60代メニュー5回」と「毎日60代2回＋40代1回」は、どちらも1日10ポイントです。</p>
      </div>
@@ -1600,11 +1606,11 @@ function planPanel(){
   const warn=[cs?'筋トレの日が2日続いています。間に「かるい日」をはさむと効果的です。':'',ns>4?'筋トレの日が多めです。週2〜3日で十分効果があります。':'',ns===0?'筋トレの日がありません。週2日以上入れましょう。':'',nr===0?'休みの日がありません。週1日は休みましょう。':''].filter(Boolean);
   $('wkWarn').hidden=!warn.length;$('wkWarn').textContent=warn.join(' ');
   const tp=todayPlan(p),st=planSettings(p,tp.t,tp.back);
-  const name={S:`筋トレの日：${CAT[st.menu]||'①＋② 両方'}`,L:'かるい日：②おなか＋関節ほぐし',W:'歩く日：外を20〜40分、または③立ったまま',R:'休みの日：⑥ストレッチだけ（何もしなくてもOK）'}[tp.t];
+  const name={S:`筋トレの日：${CAT[st.menu]||'①＋② 両方'}`,L:'かるい日：②おなか＋関節ほぐし',W:'歩く日：外を20〜40分、または③立ったまま',R:'休みの日：筋トレは休み。散歩やストレッチはOK'}[tp.t];
   const tips={S:[`${TIERNAME[p.tier]}メニュー・強さ「${({light:'かるめ',normal:'ふつう',hard:'しっかり'})[st.level]}」。ウォームアップとクールダウンを付けます。`,'時間帯は昼〜夕方が一番向いています。','最後の数回が「ややきつい」くらいがちょうどよい強さです。'],
     L:['朝は⑦関節ほぐしで体をほぐし、昼か夜に②おなかを。','おなかは毎日やってもかまいません。上体起こしの回数アップにつながります。',...(campOn(p)&&p.camp.goal==='belly'?['おなか作戦中：1日合計30分くらい動きましょう。外を歩ける日は外を、歩けない日は⑧足踏み10分を1〜3回（分けてOK）。下で選べます。脂肪を燃やすのは、こうした動く時間と食事です。']:[])],
     W:['外を歩ける日は20〜40分、歩けない日は家の中で⑧足踏み10分を2〜3回。下でどちらかを選べます。','外を歩くときは、少し速めに、腕を振って。'],
-    R:['筋肉が回復して強くなる日です。','寝る前に⑥ストレッチをすると、足がつりにくくなります。',...(campOn(p)&&p.camp.goal==='belly'?['休みの日も、ゆっくり散歩くらいはしてかまいません。']:[])]}[tp.t];
+    R:['筋トレは休みます。筋肉は、休んでいる間に修理されて強くなります。疲れを感じなくても、筋肉の中では修理が進んでいます。','物足りない日は、ゆっくりの散歩や自転車（20〜30分、会話ができる速さ）と、⑥ストレッチ・腰割りはやってかまいません（「動く休養」）。','寝る前に⑥ストレッチをすると、足がつりにくくなります。']}[tp.t];
   const L=(logs[p.id]||[]).map(LO),tl=(tests[p.id]||[]),lt=tl.length?tl.map(x=>x.d).sort().slice(-1)[0]:null,testDue=!lt||dBetween(lt,today)>=28;
   $('todayCard').innerHTML=`<span class="hint">今日（${fmtD(today)}）の${esc(p.name)}さん</span><h3>${tp.done?'✓ ':''}${esc(name)}</h3>
     ${tp.done?'<p><b>今日の予定は終わりました。おつかれさまでした。</b></p>':''}
@@ -1612,7 +1618,7 @@ function planPanel(){
     <ul>${tips.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>
     ${testDue?`<p><b>${lt?'前回の体力測定から4週間たちました。':'まだ体力測定をしていません。'}</b>今日か近いうちに体力測定（約3分）を。 <button class="link" id="tdTest">体力測定へ</button></p>`:''}
     ${tp.done||tp.t==='W'?'':`<button class="big" id="tdUse">このメニューにする</button>`}
-    ${(()=>{const mm=moveMin(p.id,today),bel=campOn(p)&&p.camp.goal==='belly',mv=tp.t==='W'||(tp.t==='L'&&bel);
+    ${(()=>{const mm=moveMin(p.id,today),bel=campOn(p)&&p.camp.goal==='belly'&&tp.t!=='R',mv=tp.t==='W'||(tp.t==='L'&&bel);
       return `${mv?`<div><b>今日の動き方を選んでください</b>（どちらでもOK・組み合わせてもOK）</div>
       <div class="seg" id="mvSeg"><button data-v="step">家の中で⑧足踏み10分</button><button data-v="walk">外を歩く</button><button data-v="bike">自転車</button></div>`
       :`<button class="link" id="mvWalkOpen" style="align-self:flex-start">外を歩く・自転車（時間・距離を計る）</button>`}
