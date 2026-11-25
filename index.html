@@ -31,6 +31,32 @@
   --accent:#4cc49a; --accent-ink:#0b1813; --warm:#e8964f; --line:#2c3a35; --track:#24322d; color-scheme:dark}
 
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:19px;line-height:1.7}
+/* ---- 画面の切りかえ（下のタブ） ---- */
+body.tabs{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+.tab-off{display:none!important}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-template-columns:repeat(5,1fr);background:var(--surface);border-top:1px solid var(--line);padding:6px max(6px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(6px,env(safe-area-inset-left,0px))}
+.tabbar[hidden]{display:none}
+.tabbar button{display:flex;flex-direction:column;align-items:center;gap:2px;border:0;background:none;color:var(--muted);font:inherit;font-size:.82rem;font-weight:700;padding:6px 0;border-radius:12px;cursor:pointer;min-width:0}
+.tabbar svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.tabbar button[data-t="menu"] svg path{fill:currentColor}
+.tabbar button[aria-current="page"]{color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.whobar{display:flex;gap:6px;align-items:center;overflow-x:auto;padding:4px 0 8px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg)}
+.whobar span{font-size:.9rem;color:var(--muted);white-space:nowrap}
+.whobar button{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:.95rem;font-weight:700;padding:6px 14px;border-radius:999px;cursor:pointer}
+.whobar button[aria-pressed="true"]{background:var(--accent);color:var(--surface);border-color:var(--accent)}
+/* ---- メニューえらび ---- */
+.steph{margin:14px 0 6px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.steph>b{display:inline-flex;align-items:center;justify-content:center;width:1.7em;height:1.7em;border-radius:50%;background:var(--accent);color:var(--surface);font-size:.9rem}
+.steph small{font-weight:400;color:var(--muted);font-size:.85rem}
+.seg.mgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.seg.mgrid .mgrp{grid-column:1/-1;font-size:.85rem;font-weight:700;color:var(--muted);margin-top:6px;letter-spacing:.05em}
+.seg.mgrid button{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:0;padding:10px 12px;min-height:64px}
+.seg.mgrid button b{font-size:1.02rem}.seg.mgrid button small{font-size:.8rem;font-weight:400;opacity:.85}
+.seg.tiers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+#exWrap #exList{padding:0;border:0;box-shadow:none;background:none;margin:0}
+.todaysec h2{margin:0 0 6px}
+body.tabs header.stage .lead{display:none}
+body.tabs header.stage h1{font-size:1.6rem}
 .wrap{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px;display:flex;flex-direction:column;gap:24px}
 h1{font-family:var(--f-display);font-weight:900;font-size:2rem;line-height:1.3;margin:0;text-wrap:balance}
 h2{font-family:var(--f-display);font-weight:700;font-size:1.3rem;margin:0}
@@ -271,7 +297,15 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
 @media (prefers-reduced-motion: reduce){.gauge i{transition:none}}
 </style>
 
+<nav class="tabbar" id="tabbar" aria-label="画面の切りかえ">
+  <button data-t="today"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/></svg><span>きょう</span></button>
+  <button data-t="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg><span>メニュー</span></button>
+  <button data-t="rec"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v15H4zM4 9h16M8 3v4M16 3v4"/></svg><span>記録</span></button>
+  <button data-t="goal"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/></svg><span>目標</span></button>
+  <button data-t="set"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span>設定</span></button>
+</nav>
 <div class="wrap" id="home">
+  <div class="whobar" id="whoBar" aria-label="だれの画面か"></div>
   <header class="stage">
     <h1>わが家の体操タイマー</h1>
     <p class="lead">声で数えるので、画面を見ずに運動できます。家族それぞれ、年代に合わせたメニューを選べます。</p>
@@ -337,12 +371,21 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
   </section>
 
   <section class="panel" aria-label="きょうのメニュー" id="menuPanel">
-    <h2>きょうのメニュー</h2>
-    <div class="row"><label id="l-mtier">年代メニュー（どの年代でも選べます）</label>
-      <div class="seg" role="group" aria-labelledby="l-mtier" data-key="tier">
+    <h2>メニューをえらぶ</h2>
+    <p class="steph"><b>1</b> なにをしますか</p>
+    <div class="seg mgrid" role="group" aria-label="メニューを選ぶ" data-key="menu">
+      <div class="mgrp">筋トレ</div>
+      <button id="m-both" data-v="both"><b>①＋② 両方</b><small>基本とおなか</small></button><button id="m-base" data-v="base"><b>① 基本</b><small>足・全身</small></button>
+      <button id="m-belly" data-v="belly"><b>② おなか</b><small>腹筋・体幹</small></button><button id="m-chair" data-v="chair"><b>④ 椅子中心</b><small>ひざにやさしい</small></button>
+      <button id="m-nojump" data-v="nojump"><b>⑤ ジャンプなし</b><small>静かにできる</small></button>
+      <div class="mgrp">かるく動く</div>
+      <button id="m-step" data-v="step"><b>⑧ 足踏み10分</b><small>家の中で歩くかわり</small></button><button id="m-stand" data-v="stand"><b>③ 立ったまま</b><small>外出先でも</small></button>
+      <div class="mgrp">ほぐす・のばす</div>
+      <button id="m-joint" data-v="joint"><b>⑦ 関節ほぐし</b><small>運動の前・朝に</small></button><button id="m-cool" data-v="cool"><b>⑥ ストレッチ</b><small>運動のあと・寝る前に</small></button></div>
+    <div class="row" id="tierRow"><p class="steph" id="l-mtier"><b>2</b> 年代メニュー<small>（年齢より、いまの体力で選んでOK）</small></p>
+      <div class="seg tiers" role="group" aria-labelledby="l-mtier" data-key="tier">
         <button data-v="10">10代</button><button data-v="20">20代</button><button data-v="30">30代</button><button data-v="40">40代</button><button data-v="50">50代</button><button data-v="60">60代</button><button data-v="70">70代〜</button></div></div>
-    <div class="seg" role="group" aria-label="メニューを選ぶ" data-key="menu">
-      <button id="m-base" data-v="base">① 基本</button><button id="m-belly" data-v="belly">② おなか</button><button id="m-both" data-v="both">①＋② 両方</button><button id="m-stand" data-v="stand">③ 立ったまま（外出先）</button><button id="m-chair" data-v="chair">④ 椅子中心</button><button id="m-nojump" data-v="nojump">⑤ ジャンプなし</button><button id="m-cool" data-v="cool">⑥ ストレッチ（クールダウン）</button><button id="m-joint" data-v="joint">⑦ 関節ほぐし（ウォームアップ）</button><button id="m-step" data-v="step">⑧ 足踏み（家の中で10分）</button></div>
+    <p class="steph"><b id="stepN3">3</b> 強さと時間</p>
     <div class="row"><label id="l-mins">時間</label>
       <div class="seg" role="group" aria-labelledby="l-mins" data-key="mins">
         <button data-v="full">ぜんぶ</button><button data-v="3">3分</button><button data-v="5">5分</button><button data-v="7">7分</button><button data-v="10">10分</button></div>
@@ -350,17 +393,19 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
     <div class="row"><label id="l-level">強さ</label>
       <div class="seg" role="group" aria-labelledby="l-level" data-key="level">
         <button id="lv-l" data-v="light">かるめ</button><button id="lv-n" data-v="normal">ふつう</button><button id="lv-h" data-v="hard">しっかり</button></div></div>
+    <details class="guide-d" id="moreOpt"><summary><h2 style="font-size:1.05rem">そのほかの設定（ウォームアップ・クールダウン・一緒にやる人）</h2></summary>
     <div class="row"><label id="l-warm">最初のウォームアップ（肩・股関節・足首の関節ほぐし）</label>
       <div class="seg" role="group" aria-labelledby="l-warm" data-key="warm"><button data-v="on">つける</button><button data-v="off">つけない</button></div></div>
     <div class="row"><label id="l-cool">最後のクールダウン（内もも・太もも・ふくらはぎのストレッチ）</label>
       <div class="seg" role="group" aria-labelledby="l-cool" data-key="cool"><button data-v="on">つける</button><button data-v="off">つけない</button></div></div>
     <div class="row" id="withRow"><label id="l-with">一緒にやる人（えらんだ人にも同じポイントが入ります）</label><div class="people" id="withBox" role="group" aria-labelledby="l-with"></div></div>
+    </details>
     <p class="lead" id="total"></p>
     <p class="kcline" id="kcLine"></p>
     <p class="nowtip" id="nowTip"></p>
     <button class="big" id="startBtn">はじめる</button>
+    <details class="guide-d" id="exWrap"><summary><h2 style="font-size:1.05rem">このメニューの種目を見る</h2></summary></details>
     <button class="ghost" id="camBtn">カメラで数える（スクワット・もも上げ・腕立て・ジャンピングジャック／試験版）</button>
-    <button class="ghost" id="testBtn">声のテスト</button>
   </section>
 
   <section class="panel" aria-label="体力測定">
@@ -446,13 +491,17 @@ button:focus-visible{outline:3px solid var(--warm);outline-offset:3px}
 
   <p class="note">痛み・めまい・息苦しさを感じたら、すぐに中止してください。回数より「毎日少しずつ」が大切です。</p>
   <p class="hint">体力年齢の判定基準：中谷敏昭ら「30秒椅子立ち上がりテスト（CS-30テスト）成績の加齢変化と標準値の作成」臨床スポーツ医学 20(3), 2003／文部科学省「体力・運動能力調査」年齢別平均値（上体起こし）。判定は目安で、医学的な診断ではありません。持病のある方は、運動を始める前に医師に相談してください。</p>
+  <section class="panel" aria-label="声のテスト" id="voiceSec"><h2>声のテスト</h2><p class="hint">声が出ない・小さいときに、スマホの音量やマナーモードを確かめます。</p><button class="ghost" id="testBtn">声のテスト</button></section>
+
   <section class="panel" aria-label="バージョン情報">
     <details class="guide-d">
-      <summary><h2>バージョン 4.9<small class="vdate">（2026年11月23日）</small></h2></summary>
+      <summary><h2>バージョン 5.1<small class="vdate">（2026年11月25日）</small></h2></summary>
       <div class="gd">
         <div class="tbl"><table>
           <thead><tr><th>版</th><th>日付</th><th>おもな変更</th></tr></thead>
           <tbody>
+            <tr><th>5.1</th><td>11/25</td><td>画面を5つのタブ（きょう・メニュー・記録・目標・設定）に分けて、長い1枚の画面をやめた。メニューえらびを「なにをする→年代→強さと時間」の順に整理。「きょうの予定」から1回押すだけで始められるように</td></tr>
+            <tr><th>5.0</th><td>11/24</td><td>古い版のアプリが同期に入ったときにできる、こわれた記録（9,000件以上に増えていた）を自動で取りのぞくように</td></tr>
             <tr><th>4.9</th><td>11/23</td><td>家族のスマホを招待リンク・QRコードでつなげるように（URLと合言葉を手で入れなくてよい）</td></tr>
             <tr><th>4.8</th><td>11/22</td><td>「今週の予定」の休みの日は、目標のサボり（マイナス）にならず、予定ペースや目標ポイントの計算からものぞくように。休みの日の案内を「動く休養」に</td></tr>
             <tr><th>4.7</th><td>11/20</td><td>外歩きで歩数センサーが止まっていた間の歩数を、距離から補うように。大作戦を立て直すとき、開始日をそのままにして数字だけ直せるように</td></tr>
@@ -1063,7 +1112,8 @@ function paint(){
       ex.appendChild(d);
     });
   });
-  calendar();fitPanel();goalPanel();guidePanel();campPanel();planPanel();
+  calendar();fitPanel();goalPanel();guidePanel();campPanel();planPanel();whoBar();
+  if($('tierRow')){const nt=NOTIER.includes(p.menu);$('tierRow').hidden=nt;$('stepN3').textContent=nt?'2':'3'}
 }
 let formNew=false,formTier='60',formSex='',formKind='family',delArmed=false;
 const withIds=new Set();
@@ -1101,7 +1151,7 @@ const total=()=>L.reduce((a,s)=>a+s.dur,0);
 const before=n=>L.slice(0,n).reduce((a,s)=>a+s.dur,0);
 async function wake(){try{if(lock)return;lock=await navigator.wakeLock.request('screen');lock.addEventListener('release',()=>{lock=null})}catch(e){lock=null}}
 function unwake(){try{lock&&lock.release()}catch(e){}lock=null}
-function show(id){['home','run','fin','test','cam','walk'].forEach(x=>$(x).hidden=x!==id);window.scrollTo(0,0);if(id==='home'&&pendingRemote){const d=pendingRemote;pendingRemote=null;applyState(mergeDocs(packState(),d))}}
+function show(id){['home','run','fin','test','cam','walk'].forEach(x=>$(x).hidden=x!==id);window.scrollTo(0,0);if($('tabbar'))$('tabbar').hidden=id!=='home';if(id==='home'&&pendingRemote){const d=pendingRemote;pendingRemote=null;applyState(mergeDocs(packState(),d))}}
 const running=()=>!$('run').hidden&&timer!==null;
 const stepEl=()=>paused?pausedEl/1000:(performance.now()-t0)/1000;
 function enter(n){
@@ -1425,8 +1475,11 @@ function ptsOf(tier,menu,level,mins){
 const fmtP=n=>String(Math.round(n*10)/10);
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 /* 同じ記録（同じ日・メニュー・時刻）が2つあれば、項目の多いほうを1つだけ残す（古い版との同期で二重になった分） */
+/* こわれた記録（日付が「[object Object]」など）は捨てる。古い版のアプリが同期に入ると、記録をこわして増やすことがあるため */
+const okLog=x=>{if(x&&typeof x==='object')return typeof x.d==='string'&&/^\d{4}-\d\d-\d\d$/.test(x.d)&&!!x.menu;
+  const a=String(x).split('|');return /^\d{4}-\d\d-\d\d$/.test(a[0])&&!!a[2]};
 function dedupLogArr(arr){const by=new Map(),out=[];
-  (arr||[]).forEach(x=>{let k=null;
+  (arr||[]).filter(okLog).forEach(x=>{let k=null;
     if(x&&typeof x==='object'){if(x.t)k=`${x.d}|${x.menu}|${x.t}`}else{const a=String(x).split('|');if(+a[5])k=`${a[0]}|${a[2]}|${a[5]}`}
     if(k==null){out.push(x);return}
     const o=by.get(k);if(o==null){by.set(k,out.length);out.push(x);return}
@@ -1634,7 +1687,7 @@ function planPanel(){
     ${tp.why?`<p>${esc(tp.why)}</p>`:''}${tp.back?`<p>${tp.gap}日ぶりの運動です。体を慣らすため、今日は「かるめ」から始めましょう。</p>`:''}
     <ul>${tips.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>
     ${testDue?`<p><b>${lt?'前回の体力測定から4週間たちました。':'まだ体力測定をしていません。'}</b>今日か近いうちに体力測定（約3分）を。 <button class="link" id="tdTest">体力測定へ</button></p>`:''}
-    ${tp.done||tp.t==='W'?'':`<button class="big" id="tdUse">このメニューにする</button>`}
+    ${tp.done||tp.t==='W'?'':`<button class="big" id="tdUse">はじめる</button>`}
     ${(()=>{const mm=moveMin(p.id,today),bel=campOn(p)&&p.camp.goal==='belly'&&tp.t!=='R',mv=tp.t==='W'||(tp.t==='L'&&bel);
       return `${mv?`<div><b>今日の動き方を選んでください</b>（どちらでもOK・組み合わせてもOK）</div>
       <div class="seg" id="mvSeg"><button data-v="step">家の中で⑧足踏み10分</button><button data-v="walk">外を歩く</button><button data-v="bike">自転車</button></div>`
@@ -1644,7 +1697,7 @@ function planPanel(){
       <div><b id="wbManual"></b></div>
       <div class="btns" id="walkBtns">${[10,20,30,45,60].map(m=>`<button class="ghost" data-m="${m}">${m}分</button>`).join('')}</div><p class="hint" id="walkMsg"></p></div>
       ${mm||bel?`<p>今日の足踏み・歩き・自転車：<b>${mm}分</b>${bel?`　（目安 30分${mm>=30?'　✓ できました':`、あと${30-mm}分`}）`:''}</p>`:''}`})()}`;
-  if($('tdUse'))$('tdUse').onclick=()=>{Object.assign(p,st);savePeople();paint();say(`${p.name}さん、今日は${({S:'筋トレの日',L:'かるい日',W:'歩く日',R:'休みの日'})[tp.t]}です。メニューを合わせました。`);setTimeout(()=>$('menuPanel').scrollIntoView({block:'start'}),60)};
+  if($('tdUse'))$('tdUse').onclick=()=>{Object.assign(p,st);savePeople();paint();$('startBtn').click();return;setTimeout(()=>$('menuPanel').scrollIntoView({block:'start'}),60)};
   if($('tdTest'))$('tdTest').onclick=()=>$('fitBtn').scrollIntoView({block:'center'});
   const setKind=k=>{wbKind=k;press($('wbKind'),k);$('walkStart').textContent=k==='bike'?'自転車をこぎ始める（時間・距離・速さを計る）':'歩き始める（時間・歩数・距離を計る）';
     $('wbManual').textContent=k==='bike'?'計らずに乗ったときは、時間だけ記録：':'計らずに歩いたときは、時間だけ記録：';
@@ -1895,6 +1948,43 @@ function campForm(p){
   };
   draw();
 }
+/* ---- 画面の切りかえ（きょう／メニュー／記録／目標／設定） ---- */
+(function(){
+  const home=$('home'),secOf=el=>el&&el.closest('#home > *');
+  const tsec=document.createElement('section');tsec.className='panel todaysec';tsec.id='todaySec';tsec.setAttribute('aria-label','きょうの予定');
+  tsec.innerHTML='<h2>きょうの予定</h2>';tsec.appendChild($('todayCard'));
+  const go=document.createElement('button');go.className='ghost';go.textContent='ほかのメニューを選ぶ';go.onclick=()=>setTab('menu');tsec.appendChild(go);
+  $('joinPanel').after(tsec);
+  $('exWrap').appendChild($('exList'));$('exList').className='';
+  const pick=(sel)=>[...home.children].find(e=>e.matches&&e.matches(sel));
+  const map={
+    today:['header.stage','#joinPanel','section[aria-label="だれがやりますか"]','#todaySec'],
+    menu:['#menuPanel'],
+    rec:['section[aria-label="獲得ポイント"]','section[aria-label="今月の記録"]','section[aria-label="体力測定"]'],
+    goal:['#campPanel','section[aria-label="目標"]','#planPanel'],
+    set:['section[aria-label="効果的な使い方"]','section[aria-label="記録のバックアップ"]','#voiceSec','p.note','section[aria-label="バージョン情報"]']};
+  /* 並べかえ：タブの順に、ホームの中身を入れなおす */
+  const order=['#whoBar'];Object.values(map).forEach(a=>order.push(...a));
+  for(const t in map)map[t].forEach(sel=>home.querySelectorAll(':scope > '+sel).forEach(e=>{e.dataset.tab=t}));
+  [...home.children].forEach(e=>{if(!e.dataset.tab&&e.id!=='whoBar')e.dataset.tab='set'});
+  const seen=new Set(),sorted=[$('whoBar')];
+  for(const t in map){map[t].forEach(sel=>home.querySelectorAll(':scope > '+sel).forEach(e=>{if(!seen.has(e)){seen.add(e);sorted.push(e)}}));
+    [...home.children].forEach(e=>{if(e.dataset.tab===t&&!seen.has(e)){seen.add(e);sorted.push(e)}})}
+  sorted.forEach(e=>home.appendChild(e));
+  document.body.classList.add('tabs');
+  window.setTab=function(t){
+    [...home.children].forEach(e=>{if(e.dataset.tab)e.classList.toggle('tab-off',e.dataset.tab!==t)});
+    $('whoBar').classList.toggle('tab-off',t==='today'||t==='set');
+    $('tabbar').querySelectorAll('button').forEach(b=>{if(b.dataset.t===t)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
+    window.curTab=t;window.scrollTo(0,0)};
+  $('tabbar').querySelectorAll('button').forEach(b=>b.onclick=()=>setTab(b.dataset.t));
+  /* 別のタブの中へ移動する操作（「体力測定へ」など）は、自動でそのタブに切りかえる */
+  const siv=Element.prototype.scrollIntoView;
+  Element.prototype.scrollIntoView=function(...a){const s=this.closest&&this.closest('#home > [data-tab]');if(s&&s.classList.contains('tab-off'))setTab(s.dataset.tab);return siv.apply(this,a)};
+  setTab('today');
+})();
+function whoBar(){const b=$('whoBar');if(!b)return;b.innerHTML='<span>だれの画面：</span>';
+  people.forEach(q=>{const x=document.createElement('button');x.textContent=q.name;x.setAttribute('aria-pressed',String(q.id===curId));x.onclick=()=>{curId=q.id;savePeople();paint()};b.appendChild(x)})}
 $('wkPreset').querySelectorAll('button').forEach(b=>b.onclick=()=>{const p=cur();p.wk=WKP[b.dataset.v];savePeople();planPanel()});
 
 function guidePanel(){
@@ -2620,6 +2710,5 @@ $('backBtn').onclick=()=>show('home');
 paint();
 })();
 </script>
-
 </body>
 </html>
